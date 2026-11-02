@@ -1,0 +1,23 @@
+/** TanStack Query keys for the admin dashboard (all prefixed with "admin"). */
+export const adminKeys = {
+  all: ["admin"] as const,
+  me: ["admin", "me"] as const,
+  stats: ["admin", "stats"] as const,
+  health: ["admin", "health"] as const,
+  users: (q: string, status: string, offset: number) => ["admin", "users", { q, status, offset }] as const,
+  usersAll: ["admin", "users"] as const,
+  user: (id: string) => ["admin", "user", id] as const,
+  sessions: (id: string) => ["admin", "user", id, "sessions"] as const,
+  reports: (filters: Record<string, string | number>) => ["admin", "reports", filters] as const,
+  reportsAll: ["admin", "reports"] as const,
+  report: (id: string) => ["admin", "report", id] as const,
+  appeals: (status: string, offset: number) => ["admin", "appeals", { status, offset }] as const,
+  appealsAll: ["admin", "appeals"] as const,
+  content: (kind: string, state: string, offset: number) => ["admin", "content", { kind, state, offset }] as const,
+  contentAll: ["admin", "content"] as const,
+  audit: (action: string, adminId: string, offset: number) => ["admin", "audit", { action, adminId, offset }] as const,
+  jobs: ["admin", "jobs"] as const,
+  errors: ["admin", "errors"] as const,
+  settings: ["admin", "settings"] as const,
+  announcements: ["admin", "announcements"] as const,
+};

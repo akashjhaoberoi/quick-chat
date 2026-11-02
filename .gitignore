@@ -39,3 +39,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Quick Chat
+/test-results/
+/playwright-report/
+/playwright/.cache/
+.env*.local
+!.env.example
