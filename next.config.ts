@@ -8,6 +8,8 @@ function origin(url: string | undefined): string[] {
     const u = new URL(url);
     const out = [u.origin];
     if (u.protocol === "https:") out.push(`wss://${u.host}`);
+    // Local Supabase (supabase start) is plain http; realtime then uses ws://.
+    if (u.protocol === "http:") out.push(`ws://${u.host}`);
     if (u.protocol === "wss:") out.push(`https://${u.host}`);
     return out;
   } catch {

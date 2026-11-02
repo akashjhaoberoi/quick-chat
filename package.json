@@ -6,6 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "local": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/start-local.ps1",
+    "make-admin": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/make-admin.ps1",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
