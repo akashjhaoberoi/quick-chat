@@ -23,6 +23,8 @@ test.describe("Google sign-in", () => {
     expect(url.searchParams.get("provider")).toBe("google");
     expect(url.searchParams.get("code_challenge_method")).toBe("s256");
     expect(url.searchParams.get("code_challenge")).toBeTruthy();
+    // Account chooser every time, so another Google account can be used after signing out.
+    expect(url.searchParams.get("prompt")).toBe("select_account");
     expect(url.searchParams.get("redirect_to")).toBe(`${new URL(baseURL!).origin}/auth/callback?next=%2Ffriends`);
     const verifier = (await context.cookies()).find((c) => c.name.endsWith("-auth-token-code-verifier"));
     expect(verifier, "PKCE verifier cookie must be stored before leaving the site").toBeTruthy();
@@ -61,8 +63,10 @@ test.describe("Google sign-in", () => {
     await page.goto("/login");
     await page.getByRole("button", { name: "Continue with Google" }).click();
     await page.waitForURL(/\/auth\/v1\/authorize/);
-    await page.goBack();
-    await expect(page.getByRole("button", { name: "Continue with Google" })).toBeEnabled();
+    // WebKit can report the stubbed cross-site page's Back as a cancelled provisional
+    // navigation; only wait for the commit and judge by what's on screen.
+    await page.goBack({ waitUntil: "commit" }).catch(() => undefined);
+    await expect(page.getByRole("button", { name: "Continue with Google" })).toBeEnabled({ timeout: 15_000 });
   });
 
   test.describe("signed in", () => {

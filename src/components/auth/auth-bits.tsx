@@ -102,7 +102,11 @@ export function GoogleButton({ next, label = "Continue with Google", disabled }:
           }
           const { error: err } = await getSupabaseBrowserClient().auth.signInWithOAuth({
             provider: "google",
-            options: { redirectTo: `${location.origin}/auth/callback?next=${encodeURIComponent(next)}` },
+            options: {
+              redirectTo: `${location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
+              // Always show Google's account chooser, so after signing out you can pick a different account.
+              queryParams: { prompt: "select_account" },
+            },
           });
           if (err) {
             setError(/provider is not enabled|unsupported provider/i.test(err.message) ? "Google sign-in isn't enabled on this server yet." : authErrorMessage(err));
