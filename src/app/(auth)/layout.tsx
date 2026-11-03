@@ -1,9 +1,7 @@
 import Link from "next/link";
-import { preconnect } from "react-dom";
 import { Camera, MessageCircle, ShieldCheck, Sparkles } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
 import { InstallButton } from "@/components/pwa/install-button";
-import { publicEnv } from "@/lib/env";
 
 const POINTS = [
   { icon: MessageCircle, title: "Real-time chat", text: "Typing indicators, reactions, voice notes and groups." },
@@ -13,15 +11,6 @@ const POINTS = [
 
 /** Split layout: brand panel on desktop, single column on mobile. */
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
-  // Warm up the connections sign-in needs before the user clicks: the password
-  // request is a CORS fetch (anonymous pool), Google's start is a navigation
-  // (credentialed pool) to Supabase and then accounts.google.com.
-  const supabase = publicEnv.NEXT_PUBLIC_SUPABASE_URL;
-  if (supabase) {
-    preconnect(supabase, { crossOrigin: "anonymous" });
-    preconnect(supabase);
-  }
-  preconnect("https://accounts.google.com");
   return (
     <div className="flex min-h-dvh bg-bg">
       <aside className="brand-gradient relative hidden w-[44%] max-w-xl flex-col justify-between overflow-hidden p-10 text-white lg:flex">
