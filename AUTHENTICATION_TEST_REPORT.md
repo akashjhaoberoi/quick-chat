@@ -1,7 +1,7 @@
 # Authentication Test Report — Quick Chat
 
 **Date:** 3 Nov 2026
-**Production:** https://quickchat.akarikatechnologies.me (deployment `dpl_BtrhkS3hLkS1Tp3gq5AL9VGhtZsM`, commit `0ad8a9c`)
+**Production:** https://quickchat.akarikatechnologies.me (deployment `dpl_2N3cKEDSrhAm3DYkSdKTLLBCdsz8`, commit `496582f`)
 
 **Labels:**
 - **PASS:** actually tested and working.
@@ -44,6 +44,7 @@
 | Suspended account → /suspended | PASS | session-expiry.spec |
 | Account deleted server-side → profile no longer shown | PASS | session-expiry.spec |
 | Google: one PKCE flow, correct `redirect_to`, verifier cookie stored | PASS | google-oauth.spec (local and **production**) |
+| Google: account chooser on every sign-in (`prompt=select_account`) | PASS | **production**, Chrome |
 | Google: button reaches accounts.google.com | PASS | **production** — Chromium, WebKit, iPhone emulation |
 | Google: callback without code / provider error / missing verifier explains itself | PASS | **production** |
 | Google: Back from Google re-enables the button | PASS | **production** (8 of 9 repeats; the other failed on a network timeout before the page loaded) |

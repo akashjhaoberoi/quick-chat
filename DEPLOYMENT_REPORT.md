@@ -6,12 +6,12 @@
 
 | Item | Value | Verified |
 |---|---|---|
-| Repository | github.com/akashjhaoberoi/quick-chat, branch `main` | `0ad8a9c` pushed |
-| Hosting | Vercel project `quick-chat` (Hobby) | deployment `dpl_BtrhkS3hLkS1Tp3gq5AL9VGhtZsM` **READY** |
+| Repository | github.com/akashjhaoberoi/quick-chat, branch `main` | `496582f` pushed |
+| Hosting | Vercel project `quick-chat` (Hobby), functions in `bom1` (Mumbai) | deployment `dpl_2N3cKEDSrhAm3DYkSdKTLLBCdsz8` **READY**; `x-vercel-id: bom1::bom1` |
 | Main domain | https://quickchat.akarikatechnologies.me | HTTPS 200, HSTS (2 years, preload) |
 | DNS | Cloudflare → Vercel | resolves; Vercel domain verified |
 | Secondary address | quick-chat-xi-sand.vercel.app | 308 redirect to the main domain |
-| Database / Auth | Supabase project `tcszexnghusdumzgudak` (Mumbai) | `/api/health` → database ok |
+| Database / Auth | Supabase project `tcszexnghusdumzgudak` (Mumbai) | `/api/health` → database ok, 15–39 ms (was 667–1,352 ms from `iad1`) |
 | Calls | LiveKit Cloud | health: livekit true |
 | Email | Resend, domain `akarikatechnologies.me` | domain verified (DKIM, SPF, MX) |
 | Storage | Supabase Storage, bucket `media` (private) | health: storage supabase |
