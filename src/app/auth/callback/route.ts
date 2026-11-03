@@ -30,8 +30,19 @@ export async function GET(request: NextRequest) {
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.auth.exchangeCodeForSession(code);
   if (error || !data.session) {
-    const closed = /registration_closed|database error saving new user/i.test(error?.message ?? "");
-    return fail(closed ? "New registrations are currently closed." : "We couldn't complete sign-in. Please try again.");
+    // The same callback URL can load twice (double tap, Safari restoring a tab, a
+    // prefetch). The first request already signed in, so continue instead of failing.
+    const { data: existing } = await supabase.auth.getClaims();
+    if (existing?.claims?.sub) return NextResponse.redirect(new URL(next, url.origin));
+
+    const message = error?.message ?? "";
+    if (/registration_closed|database error saving new user/i.test(message)) return fail("New registrations are currently closed.");
+    // The PKCE verifier cookie lives on the site that started sign-in. It's missing when sign-in
+    // began on another address, in another browser or app window, or cookies were blocked/cleared.
+    if (error?.name === "AuthPKCECodeVerifierMissingError" || /code verifier/i.test(message)) {
+      return fail("Sign-in was started in a different browser or window, or cookies are blocked. Please tap Continue with Google again here.");
+    }
+    return fail("We couldn't complete sign-in. Please try again.");
   }
 
   const { data: claimsData } = await supabase.auth.getClaims();

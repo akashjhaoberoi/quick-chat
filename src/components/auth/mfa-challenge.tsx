@@ -10,7 +10,7 @@ import { Field, Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/feedback";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { AuthCard, AuthHeading, FormAlert } from "./auth-bits";
-import { authErrorMessage, safeNext } from "./auth-utils";
+import { authErrorMessage, safeNext, signOutDevice } from "./auth-utils";
 
 /** Second sign-in step for accounts with a verified TOTP authenticator. */
 export function MfaChallenge() {
@@ -77,9 +77,7 @@ export function MfaChallenge() {
   }
 
   async function switchAccount() {
-    await fetch("/api/auth/logout", { method: "POST" }).catch(() => undefined);
-    await getSupabaseBrowserClient().auth.signOut();
-    router.replace("/login");
+    await signOutDevice();
   }
 
   return (

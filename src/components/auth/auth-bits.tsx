@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { motion } from "motion/react";
 import { AlertCircle, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -73,6 +73,15 @@ function GoogleIcon() {
 export function GoogleButton({ next, label = "Continue with Google", disabled }: { next: string; label?: string; disabled?: boolean }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Returning from Google with Back restores this page from the back/forward cache
+  // (Safari especially) with the button still spinning; make it usable again.
+  useEffect(() => {
+    const onPageShow = (e: PageTransitionEvent) => {
+      if (e.persisted) setBusy(false);
+    };
+    window.addEventListener("pageshow", onPageShow);
+    return () => window.removeEventListener("pageshow", onPageShow);
+  }, []);
   return (
     <>
       {error ? <FormAlert>{error}</FormAlert> : null}
@@ -83,8 +92,14 @@ export function GoogleButton({ next, label = "Continue with Google", disabled }:
         loading={busy}
         disabled={disabled}
         onClick={async () => {
+          if (busy) return;
           setBusy(true);
           setError(null);
+          if (!navigator.cookieEnabled) {
+            setError("Cookies are blocked in this browser. Allow cookies for this site, then try again.");
+            setBusy(false);
+            return;
+          }
           const { error: err } = await getSupabaseBrowserClient().auth.signInWithOAuth({
             provider: "google",
             options: { redirectTo: `${location.origin}/auth/callback?next=${encodeURIComponent(next)}` },

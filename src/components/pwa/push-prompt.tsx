@@ -6,16 +6,15 @@ import { BellRing, Download, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { enablePush, pushSupport } from "@/lib/push-client";
-
-type BeforeInstallPromptEvent = Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: string }> };
+import { promptInstall, useInstallStatus } from "@/lib/pwa-install";
 
 const DISMISS_KEY = "qc-prompt-dismissed";
 
 /** Gentle, dismissible prompts for push notifications and app installation. */
 export function PushPrompt() {
   const [kind, setKind] = useState<"push" | "install" | null>(null);
-  const [installEvent, setInstallEvent] = useState<BeforeInstallPromptEvent | null>(null);
   const [busy, setBusy] = useState(false);
+  const installable = useInstallStatus() === "prompt";
 
   useEffect(() => {
     let dismissed = false;
@@ -27,18 +26,10 @@ export function PushPrompt() {
     if (dismissed) return;
     const t = window.setTimeout(() => {
       if (pushSupport() === "default") setKind("push");
+      else if (installable) setKind("install");
     }, 8000);
-    const onInstall = (e: Event) => {
-      e.preventDefault();
-      setInstallEvent(e as BeforeInstallPromptEvent);
-      setKind((k) => k ?? "install");
-    };
-    window.addEventListener("beforeinstallprompt", onInstall);
-    return () => {
-      window.clearTimeout(t);
-      window.removeEventListener("beforeinstallprompt", onInstall);
-    };
-  }, []);
+    return () => window.clearTimeout(t);
+  }, [installable]);
 
   const dismiss = () => {
     try {
@@ -55,9 +46,8 @@ export function PushPrompt() {
       if (kind === "push") {
         const ok = await enablePush();
         toast[ok ? "success" : "info"](ok ? "Notifications enabled" : "Notifications were not enabled");
-      } else if (installEvent) {
-        await installEvent.prompt();
-        await installEvent.userChoice;
+      } else {
+        await promptInstall();
       }
     } catch {
       toast.error("Couldn't complete that. You can try again from Settings.");

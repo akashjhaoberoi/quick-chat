@@ -77,3 +77,24 @@ export function authErrorMessage(error: { message?: string; code?: string } | nu
   if (/network|fetch/i.test(msg)) return "You appear to be offline. Check your connection and try again.";
   return msg || fallback;
 }
+
+let signingOut = false;
+
+/** True while `signOutDevice` runs, so the SIGNED_OUT listener doesn't start a second navigation. */
+export function isSigningOut(): boolean {
+  return signingOut;
+}
+
+/**
+ * Signs this device out: the server revokes the session and clears the auth
+ * cookies, the browser client drops its copy (other tabs hear SIGNED_OUT),
+ * and a full navigation discards the router cache, realtime channels, calls
+ * and every cached query. Other devices stay signed in.
+ */
+export async function signOutDevice(to = "/login"): Promise<void> {
+  signingOut = true;
+  await fetch("/api/auth/logout", { method: "POST", credentials: "same-origin" }).catch(() => undefined);
+  await getSupabaseBrowserClient().auth.signOut({ scope: "local" }).catch(() => undefined);
+  // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+  window.location.replace(to);
+}

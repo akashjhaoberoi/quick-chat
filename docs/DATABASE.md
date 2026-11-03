@@ -19,6 +19,7 @@ through policies and **write** through RPCs (SECURITY DEFINER functions that val
 | `…000710_storage_bucket.sql` | private `media` bucket (Supabase Storage fallback) |
 | `…000800_auth.sql` | `auth.users` before-insert trigger that blocks sign-ups (incl. Google) while `registration_open` is false |
 | `…001100_social_ui.sql` | `my_friend_requests()` — pending requests with profiles + mutual counts, block-aware |
+| `…001200_anon_read_policies.sql` | Splits the public `app_settings`/`announcements` read policies by role so anonymous visitors never evaluate `private.is_admin()` (which they may not execute) |
 
 ## Entity overview
 

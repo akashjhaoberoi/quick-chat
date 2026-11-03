@@ -1,3 +1,4 @@
+import "./zod-config";
 import { z } from "zod";
 
 /** Validation schemas shared by forms (client) and route handlers (server). */

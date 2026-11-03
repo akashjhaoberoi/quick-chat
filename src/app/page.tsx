@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowRight, Camera, Compass, Lock, MessageCircle, Phone, Sparkles } from "lucide-react";
 import { LogoMark } from "@/components/brand/logo";
 import { SiteFooter, SiteHeader } from "@/components/marketing/site-chrome";
+import { InstallButton } from "@/components/pwa/install-button";
 
 const FEATURES = [
   { icon: MessageCircle, title: "Real-time chat", text: "One-to-one and group conversations with typing indicators, read receipts, reactions, replies, voice notes and media." },
@@ -47,6 +48,7 @@ export default function LandingPage() {
                 >
                   Sign in
                 </Link>
+                <InstallButton variant="ghost" size="lg" />
               </div>
             </div>
 

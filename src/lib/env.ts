@@ -8,6 +8,7 @@
  * NEXT_PUBLIC_* values must be referenced statically so Next.js can inline
  * them into client bundles.
  */
+import "./zod-config";
 import { z } from "zod";
 
 const optionalString = z
@@ -24,7 +25,13 @@ const optionalUrl = z
   .pipe(z.string().url().optional());
 
 const publicSchema = z.object({
-  NEXT_PUBLIC_APP_URL: z.string().url().default("http://localhost:3000"),
+  // "quickchat.example.com" (no scheme) is a common slip; treat it as https and drop a trailing slash.
+  NEXT_PUBLIC_APP_URL: z
+    .string()
+    .trim()
+    .transform((v) => (/^https?:\/\//i.test(v) ? v : `https://${v}`).replace(/\/+$/, ""))
+    .pipe(z.string().url())
+    .default("http://localhost:3000"),
   NEXT_PUBLIC_APP_NAME: z.string().default("Quick Chat"),
   NEXT_PUBLIC_SUPABASE_URL: optionalUrl,
   NEXT_PUBLIC_SUPABASE_ANON_KEY: optionalString,

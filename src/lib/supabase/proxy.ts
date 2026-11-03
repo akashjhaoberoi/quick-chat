@@ -1,7 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { isSupabaseConfigured, publicEnv } from "@/lib/env";
-import { REMEMBER_COOKIE, sessionCookieOptions } from "./cookies";
+import { REMEMBER_COOKIE, sessionCookieOptions, withLifetime } from "./cookies";
 
 /**
  * Refreshes the Supabase session cookie on every matched request and returns
@@ -22,7 +22,7 @@ export async function refreshSession(request: NextRequest): Promise<{ response: 
       setAll(cookiesToSet, headers) {
         for (const { name, value } of cookiesToSet) request.cookies.set(name, value);
         response = NextResponse.next({ request });
-        for (const { name, value, options } of cookiesToSet) response.cookies.set(name, value, options);
+        for (const { name, value, options } of cookiesToSet) response.cookies.set(name, value, withLifetime(options, remember));
         for (const [key, value] of Object.entries(headers ?? {})) response.headers.set(key, value);
       },
     },

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Camera, MessageCircle, ShieldCheck, Sparkles } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
+import { InstallButton } from "@/components/pwa/install-button";
 
 const POINTS = [
   { icon: MessageCircle, title: "Real-time chat", text: "Typing indicators, reactions, voice notes and groups." },
@@ -51,7 +52,11 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           <Link href="/" aria-label="Quick Chat home">
             <Logo />
           </Link>
+          <InstallButton variant="outline" size="sm" label="Install" />
         </header>
+        <div className="hidden justify-end px-6 pt-5 lg:flex">
+          <InstallButton variant="outline" size="sm" />
+        </div>
         <main className="flex flex-1 items-center justify-center px-5 py-10">
           <div className="w-full max-w-md">{children}</div>
         </main>

@@ -3,15 +3,16 @@ import { Plus_Jakarta_Sans, Sora } from "next/font/google";
 import { RootProviders } from "@/components/providers/root-providers";
 import { themeInitScript } from "@/components/providers/theme-provider";
 import { ServiceWorkerRegistrar } from "@/components/pwa/service-worker-registrar";
+import { publicEnv } from "@/lib/env";
+import { installCaptureScript } from "@/lib/pwa-install-script";
 import "./globals.css";
 
 const jakarta = Plus_Jakarta_Sans({ subsets: ["latin"], variable: "--font-jakarta", display: "swap" });
 const sora = Sora({ subsets: ["latin"], variable: "--font-sora", weight: ["600", "700", "800"], display: "swap" });
 
-const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
 export const metadata: Metadata = {
-  metadataBase: new URL(appUrl),
+  metadataBase: new URL(publicEnv.NEXT_PUBLIC_APP_URL),
   title: { default: "Quick Chat — Connect. Chat. Share.", template: "%s · Quick Chat" },
   description: "Quick Chat by Akarika Technologies: real-time messaging, disappearing Snaps, Stories, calls and more.",
   applicationName: "Quick Chat",
@@ -41,6 +42,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html lang="en" className={`${jakarta.variable} ${sora.variable}`} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+        <script dangerouslySetInnerHTML={{ __html: installCaptureScript }} />
       </head>
       <body className="min-h-dvh">
         <RootProviders>{children}</RootProviders>

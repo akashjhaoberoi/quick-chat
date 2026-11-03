@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Ban, Bell, ChevronRight, Lock, Palette, ShieldCheck, UserCog, type LucideIcon } from "lucide-react";
+import { InstallButton } from "@/components/pwa/install-button";
 import { cn } from "@/lib/utils";
 
 export const SETTINGS_NAV: { href: string; label: string; description: string; icon: LucideIcon }[] = [
@@ -58,6 +59,8 @@ export function SettingsShell({ children }: { children: ReactNode }) {
           </div>
           <div className="px-2 md:sticky md:top-6 md:px-0">
             <SettingsNav pathname={pathname} />
+            {/* Shown on every screen size (the overview card is desktop-only). */}
+            <InstallButton variant="gradient" className="mt-3 w-full" label="Install Quick Chat" />
           </div>
         </aside>
         <div className={cn("min-w-0 md:block", isIndex ? "hidden" : "block")}>{children}</div>

@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { isSupabaseConfigured, publicEnv } from "@/lib/env";
-import { REMEMBER_COOKIE, sessionCookieOptions } from "./cookies";
+import { REMEMBER_COOKIE, sessionCookieOptions, withLifetime } from "./cookies";
 
 /**
  * Supabase client bound to the current request's user session.
@@ -24,7 +24,7 @@ export async function createSupabaseServerClient(): Promise<SupabaseClient> {
       setAll(cookiesToSet) {
         try {
           for (const { name, value, options } of cookiesToSet) {
-            cookieStore.set(name, value, options);
+            cookieStore.set(name, value, withLifetime(options, remember));
           }
         } catch {
           // Called from a Server Component; the proxy refreshes sessions instead.

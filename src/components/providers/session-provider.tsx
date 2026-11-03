@@ -2,9 +2,9 @@
 
 import { createContext, useContext, useEffect, useMemo, type ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
 import type { User } from "@supabase/supabase-js";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import { isSigningOut, signOutDevice } from "@/components/auth/auth-utils";
 import { qk } from "@/lib/query-keys";
 import type { Profile, UserSettings } from "@/types/models";
 
@@ -44,22 +44,36 @@ async function loadMe(): Promise<Me | null> {
 
 /** Current user, profile, settings and admin role for the authenticated app. */
 export function SessionProvider({ children }: { children: ReactNode }) {
-  const router = useRouter();
   const queryClient = useQueryClient();
   const query = useQuery({ queryKey: qk.me, queryFn: loadMe, staleTime: 60_000 });
 
   useEffect(() => {
     const supabase = getSupabaseBrowserClient();
+    const toLogin = () => {
+      queryClient.clear();
+      // Full navigation (not router.replace) so nothing from the old session survives.
+      // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+      window.location.replace(`/login?next=${encodeURIComponent(window.location.pathname + window.location.search)}`);
+    };
+    // Fires here and in every other tab of this browser when the session ends.
     const { data } = supabase.auth.onAuthStateChange((event) => {
       if (event === "SIGNED_OUT") {
-        queryClient.clear();
-        router.replace("/login");
+        if (!isSigningOut()) toLogin();
       } else if (event === "USER_UPDATED" || event === "SIGNED_IN") {
         void queryClient.invalidateQueries({ queryKey: qk.me });
       }
     });
-    return () => data.subscription.unsubscribe();
-  }, [queryClient, router]);
+    // Back/forward cache: a page restored after sign-out must not show the old session's content.
+    const onPageShow = (e: PageTransitionEvent) => {
+      if (!e.persisted) return;
+      void supabase.auth.getSession().then(({ data: s }) => (s.session ? queryClient.invalidateQueries({ queryKey: qk.me }) : toLogin()));
+    };
+    window.addEventListener("pageshow", onPageShow);
+    return () => {
+      data.subscription.unsubscribe();
+      window.removeEventListener("pageshow", onPageShow);
+    };
+  }, [queryClient]);
 
   const value = useMemo<SessionContextValue>(
     () => ({
@@ -67,13 +81,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       loading: query.isPending,
       refresh: () => query.refetch(),
       signOut: async () => {
-        await fetch("/api/auth/logout", { method: "POST" }).catch(() => undefined);
-        await getSupabaseBrowserClient().auth.signOut();
         queryClient.clear();
-        router.replace("/login");
+        await signOutDevice();
       },
     }),
-    [query, queryClient, router],
+    [query, queryClient],
   );
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;

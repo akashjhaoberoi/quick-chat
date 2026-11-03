@@ -44,7 +44,16 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    // Everything except static assets, the service worker and metadata files.
-    "/((?!_next/static|_next/image|favicon.ico|icons/|sw.js|manifest.webmanifest|robots.txt|sitemap.xml|.*\\.(?:png|jpg|jpeg|gif|webp|svg|ico|woff2?)$).*)",
+    {
+      // Everything except static assets, the service worker and metadata files.
+      source: "/((?!_next/static|_next/image|favicon.ico|icons/|sw.js|manifest.webmanifest|robots.txt|sitemap.xml|.*\\.(?:png|jpg|jpeg|gif|webp|svg|ico|woff2?)$).*)",
+      // Skip router prefetches: redirecting a per-segment prefetch (e.g. /register while signed
+      // in) makes the follow-up request ask /home for a segment it doesn't have, which 404s.
+      // Real navigations still pass through here, and the app shell re-checks the session.
+      missing: [
+        { type: "header", key: "next-router-prefetch" },
+        { type: "header", key: "purpose", value: "prefetch" },
+      ],
+    },
   ],
 };
