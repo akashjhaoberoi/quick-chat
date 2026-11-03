@@ -4,7 +4,12 @@ import { useMemo, useSyncExternalStore, type ReactNode } from "react";
 import Link from "next/link";
 import { motion } from "motion/react";
 import { differenceInMinutes } from "date-fns";
-import { ArrowRight, Camera, ChevronRight, Compass, Flame, MessageCirclePlus, MessagesSquare, UserPlus, Users, Zap } from "lucide-react";
+import { skipToken, useInfiniteQuery, useQuery, type InfiniteData } from "@tanstack/react-query";
+import {
+  ArrowRight, Camera, ChevronRight, Compass, Flame, MessageCirclePlus, MessagesSquare, Phone, PhoneIncoming, PhoneMissed, Sparkles, UserPlus, Users, Video, Zap,
+} from "lucide-react";
+import { LogoMark } from "@/components/brand/logo";
+import { useCallDetails } from "@/components/calls/call-client";
 import { StoryCarousel } from "@/components/stories/story-carousel";
 import { AddFriendButton } from "@/components/friends/add-friend-button";
 import { useFriendRequests, useFriends, useFriendSuggestions, useStreaks } from "@/components/friends/hooks";
@@ -14,8 +19,9 @@ import { EmptyState, ErrorState, ListSkeleton } from "@/components/ui/feedback";
 import { useConversations, useUnopenedSnapCount } from "@/hooks/use-badges";
 import { usePresence } from "@/hooks/use-presence";
 import { errorMessage } from "@/lib/api/client";
-import { cn, displayName, isOnline, lastSeenLabel, shortTime } from "@/lib/utils";
-import type { ConversationSummary } from "@/types/models";
+import { qk } from "@/lib/query-keys";
+import { cn, displayName, isOnline, lastSeenLabel, relativeTime, shortTime } from "@/lib/utils";
+import type { CallHistoryItem, ConversationSummary } from "@/types/models";
 
 const STREAK_WINDOW_MIN = 6 * 60;
 const noop = () => () => {};
@@ -68,10 +74,10 @@ function SeeAll({ href, label = "See all" }: { href: string; label?: string }) {
 }
 
 const QUICK_ACTIONS = [
-  { href: "/chats?new=1", label: "New chat", icon: MessageCirclePlus, tone: "bg-[#2e90fa]/12 text-[#2e90fa]" },
-  { href: "/camera", label: "Camera", icon: Camera, tone: "bg-[#ff5e7e]/12 text-[#ff5e7e]" },
-  { href: "/friends?tab=add", label: "Add friends", icon: UserPlus, tone: "bg-[#7c5cff]/12 text-[#7c5cff]" },
-  { href: "/discover", label: "Discover", icon: Compass, tone: "bg-[#12b76a]/12 text-[#12b76a]" },
+  { href: "/camera", label: "Camera", icon: Camera, tone: "bg-brand text-brand-ink" },
+  { href: "/chats?new=1", label: "New chat", icon: MessageCirclePlus, tone: "bg-brand-soft text-brand" },
+  { href: "/friends?tab=add", label: "Add friends", icon: UserPlus, tone: "bg-brand-soft text-brand" },
+  { href: "/discover", label: "Discover", icon: Compass, tone: "bg-brand-soft text-brand" },
 ];
 
 function QuickActions() {
@@ -87,7 +93,7 @@ function QuickActions() {
         <Link
           key={href}
           href={href}
-          className="group flex flex-col items-center gap-2 rounded-3xl border border-border bg-surface px-2 py-3 text-center shadow-[var(--shadow-soft)] transition-transform hover:-translate-y-0.5"
+          className="group flex flex-col items-center gap-2 rounded-3xl border border-border bg-surface px-2 py-3 text-center shadow-[var(--shadow-soft)] transition-transform hover:-translate-y-0.5 hover:border-brand/60"
         >
           <span className={cn("flex h-11 w-11 items-center justify-center rounded-2xl transition-transform group-hover:scale-105", tone)}>
             <Icon className="h-5 w-5" aria-hidden />
@@ -134,7 +140,7 @@ function RecentChats() {
             const unread = Number(c.unread_count);
             return (
               <li key={c.conversation_id}>
-                <Link href={`/chats/${c.conversation_id}`} className="flex items-center gap-3 rounded-2xl px-2 py-2 hover:bg-surface-2">
+                <Link href={`/chats/${c.conversation_id}`} className={cn("flex items-center gap-3 rounded-2xl px-2 py-2 hover:bg-surface-2", unread ? "bg-brand-soft/40" : "")}>
                   <Avatar mediaId={c.avatar_media_id} name={c.title} size="md" />
                   <span className="min-w-0 flex-1">
                     <span className="flex items-baseline justify-between gap-2">
@@ -149,7 +155,7 @@ function RecentChats() {
                     <span className="flex items-center justify-between gap-2">
                       <span className={cn("truncate text-xs", unread ? "font-semibold text-ink" : "text-muted")}>{preview(c, me.user.id)}</span>
                       {unread ? (
-                        <span className="min-w-[20px] shrink-0 rounded-full bg-accent px-1.5 text-center text-[11px] font-bold leading-5 text-white" aria-label={`${unread} unread`}>
+                        <span className="min-w-[20px] shrink-0 rounded-full bg-accent px-1.5 text-center text-[11px] font-bold leading-5 text-brand-ink" aria-label={`${unread} unread`}>
                           {unread > 99 ? "99+" : unread}
                         </span>
                       ) : null}
@@ -175,7 +181,7 @@ function StreaksEndingSoon() {
   }, [streaks.data]);
   if (!ending.length) return null;
   return (
-    <Card title="Streaks ending soon" icon={<Flame className="h-4 w-4 text-[#ef6820]" />} action={<SeeAll href="/snaps?tab=streaks" />} delay={0.1}>
+    <Card title="Streaks ending soon" icon={<Flame className="h-4 w-4 text-accent" />} action={<SeeAll href="/snaps?tab=streaks" />} delay={0.1}>
       <ul className="-mx-2 space-y-0.5">
         {ending.slice(0, 5).map((s) => {
           const mins = Math.max(0, differenceInMinutes(new Date(s.expires_at!), new Date()));
@@ -188,7 +194,7 @@ function StreaksEndingSoon() {
                   <span className="block truncate text-sm font-semibold">
                     {displayName(s)} <span className="text-ink-2">🔥 {s.count}</span>
                   </span>
-                  <span className="block text-xs font-medium text-[#ef6820]">
+                  <span className="block text-xs font-medium text-accent">
                     ⏳ {left}
                     {s.i_sent_today ? " · waiting for them" : ""}
                   </span>
@@ -215,15 +221,15 @@ function SnapsAndRequests() {
   return (
     <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.08 }} className="grid gap-3 sm:grid-cols-2">
       {unopened ? (
-        <Link href="/snaps" className="brand-gradient flex items-center gap-3 rounded-3xl p-4 text-white shadow-[var(--shadow-pop)] transition-transform hover:-translate-y-0.5">
-          <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/20">
+        <Link href="/snaps" className="brand-gradient flex items-center gap-3 rounded-3xl p-4 text-brand-ink shadow-[var(--shadow-soft)] transition-transform hover:-translate-y-0.5">
+          <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/35">
             <Zap className="h-5 w-5" aria-hidden />
           </span>
           <span className="min-w-0 flex-1">
             <span className="block font-display text-base font-bold">
               {unopened} new {unopened === 1 ? "Snap" : "Snaps"}
             </span>
-            <span className="block text-xs text-white/80">Tap to open before they expire</span>
+            <span className="block text-xs font-medium">Tap to open before they expire</span>
           </span>
           <ArrowRight className="h-5 w-5" aria-hidden />
         </Link>
@@ -330,30 +336,167 @@ function SuggestionsCard({ delay }: { delay: number }) {
   );
 }
 
-export function HomeView() {
+/* ------------------------------------------------------------------------
+   Calls. Read-only views of caches the app already keeps — no new requests:
+   - the shell's IncomingCallOverlay polls the user's ringing invitations;
+   - the Calls page loads the call history (shown here once it is cached).
+------------------------------------------------------------------------- */
+type IncomingRow = { call_id: string; invited_at: string };
+type CallsPage = { items: CallHistoryItem[]; nextCursor: string | null };
+const MISSED_WINDOW_MIN = 24 * 60;
+
+function isMissedCall(c: CallHistoryItem) {
+  return !c.is_outgoing && (c.my_status === "missed" || (c.status === "missed" && c.my_status !== "declined"));
+}
+
+function IncomingCallBanner({ callId, userId }: { callId: string; userId: string }) {
+  // Same cache entry as the incoming-call overlay, so normally no extra fetch.
+  const details = useCallDetails(callId);
+  const call = details.data?.call;
+  const mine = details.data?.participants.find((p) => p.user_id === userId);
+  if (!call || !details.data || !(call.status === "ringing" || call.status === "active") || mine?.status !== "ringing") return null;
+  const { conversation, participants } = details.data;
+  const caller = participants.find((p) => p.user_id === call.initiator_id)?.profile ?? null;
+  const title = conversation.type === "group" ? conversation.title : displayName(caller);
+  const KindIcon = call.kind === "video" ? Video : Phone;
+  return (
+    <div role="status" className="brand-gradient flex items-center gap-3 rounded-3xl p-3 shadow-[var(--shadow-soft)]">
+      <span className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/40">
+        <span aria-hidden className="absolute inset-0 animate-pulse-ring rounded-2xl bg-white/50" />
+        <PhoneIncoming className="relative h-5 w-5" aria-hidden />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block truncate font-display text-sm font-bold">{title}</span>
+        <span className="block text-xs font-medium">Incoming {call.kind === "video" ? "video" : "voice"} call</span>
+      </span>
+      <Link
+        href={`/calls/${callId}?accept=1`}
+        className="inline-flex min-h-11 items-center gap-1.5 rounded-2xl bg-ink px-4 text-sm font-bold text-surface hover:opacity-90"
+      >
+        <KindIcon className="h-4 w-4" aria-hidden /> Answer
+      </Link>
+    </div>
+  );
+}
+
+function CallAlerts() {
+  const me = useMe();
+  const incoming = useQuery<IncomingRow[]>({ queryKey: [...qk.calls, "incoming", me.user.id], queryFn: skipToken });
+  const history = useInfiniteQuery<CallsPage, Error, InfiniteData<CallsPage, string | null>, readonly unknown[], string | null>({
+    queryKey: [...qk.calls, "history"],
+    queryFn: skipToken,
+    initialPageParam: null,
+    getNextPageParam: (last) => last.nextCursor,
+  });
+  const ringingId = incoming.data?.[0]?.call_id ?? null;
+  const missed = useMemo(() => {
+    const now = new Date();
+    return (history.data?.pages ?? [])
+      .flatMap((p) => p.items)
+      .filter((c) => isMissedCall(c) && differenceInMinutes(now, new Date(c.created_at)) <= MISSED_WINDOW_MIN);
+  }, [history.data]);
+
+  if (!ringingId && !missed.length) return null;
+  const latest = missed[0];
+  return (
+    <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }} className="space-y-3">
+      {ringingId ? <IncomingCallBanner callId={ringingId} userId={me.user.id} /> : null}
+      {latest ? (
+        <Link
+          href="/calls"
+          className="flex items-center gap-3 rounded-3xl border border-border bg-surface p-3 shadow-[var(--shadow-soft)] transition-colors hover:border-brand/60"
+        >
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-danger-soft text-danger">
+            <PhoneMissed className="h-5 w-5" aria-hidden />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block font-display text-sm font-bold">
+              {missed.length} missed {missed.length === 1 ? "call" : "calls"}
+            </span>
+            <span className="block truncate text-xs text-muted">
+              {latest.title} · {relativeTime(latest.created_at)}
+            </span>
+          </span>
+          <ChevronRight className="h-5 w-5 text-muted" aria-hidden />
+        </Link>
+      ) : null}
+    </motion.div>
+  );
+}
+
+/** Opening hero: brand, greeting and the main Snap entry point. */
+function Hero() {
   const me = useMe();
   const greeting = useGreeting();
   const first = displayName(me.profile).split(/\s+/)[0];
+  return (
+    <motion.header
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+      className="relative overflow-hidden rounded-3xl border border-border bg-gradient-to-br from-surface via-surface to-brand-soft p-5 shadow-[var(--shadow-soft)] sm:p-6"
+    >
+      <span aria-hidden className="pointer-events-none absolute -right-10 -top-12 h-40 w-40 rounded-full bg-brand/15 blur-2xl" />
+      <div className="relative flex items-start gap-4">
+        <div className="min-w-0 flex-1">
+          <p className="font-display text-[11px] font-bold uppercase tracking-[0.22em] text-brand">Quick Chat</p>
+          <h1 className="mt-1.5 font-display text-2xl font-extrabold tracking-tight sm:text-3xl">
+            {greeting}, <span className="brand-text">{first}</span> 👋
+          </h1>
+          <p className="mt-1 text-sm text-muted">Your moments. Your conversations.</p>
+        </div>
+        <LogoMark className="h-14 w-14 shrink-0 drop-shadow-sm sm:h-16 sm:w-16" title="" />
+      </div>
+      <div className="relative mt-4 flex flex-wrap gap-2">
+        <Link
+          href="/camera"
+          className="inline-flex min-h-11 items-center gap-2 rounded-2xl bg-brand px-5 text-sm font-bold text-brand-ink shadow-[var(--shadow-soft)] transition hover:brightness-105 active:brightness-95"
+        >
+          <Camera className="h-5 w-5" aria-hidden /> Snap
+        </Link>
+        <Link
+          href="/chats?new=1"
+          className="inline-flex min-h-11 items-center gap-2 rounded-2xl border border-border bg-surface px-4 text-sm font-semibold text-ink transition-colors hover:border-brand/60"
+        >
+          <MessageCirclePlus className="h-5 w-5 text-brand" aria-hidden /> New chat
+        </Link>
+      </div>
+    </motion.header>
+  );
+}
 
+function StoriesStrip() {
+  return (
+    <motion.section
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, delay: 0.03 }}
+      aria-labelledby="home-stories-title"
+      className="-mx-4 border-y border-border bg-surface py-3 md:mx-0 md:rounded-3xl md:border md:shadow-[var(--shadow-soft)]"
+    >
+      <div className="flex items-center justify-between gap-2 px-4">
+        <h2 id="home-stories-title" className="flex items-center gap-2 font-display text-base font-bold">
+          <Sparkles className="h-4 w-4 text-brand" aria-hidden /> Friends&apos; stories
+        </h2>
+        <SeeAll href="/stories" />
+      </div>
+      <StoryCarousel />
+    </motion.section>
+  );
+}
+
+export function HomeView() {
   return (
     <div className="mx-auto w-full max-w-6xl px-4 pb-10 pt-4 md:px-6 md:pt-6">
       <div className="xl:grid xl:grid-cols-[minmax(0,1fr)_340px] xl:gap-6">
         <div className="min-w-0 space-y-5">
-          <motion.header initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
-            <p className="text-sm font-semibold text-muted">{greeting},</p>
-            <h1 className="font-display text-3xl font-extrabold tracking-tight">
-              <span className="brand-text">{first}</span> 👋
-            </h1>
-          </motion.header>
-
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3, delay: 0.03 }} className="-mx-4 md:mx-0">
-            <StoryCarousel />
-          </motion.div>
-
-          <QuickActions />
+          <Hero />
+          <CallAlerts />
+          <StoriesStrip />
           <SnapsAndRequests />
-          <StreaksEndingSoon />
           <RecentChats />
+          <StreaksEndingSoon />
+          <QuickActions />
 
           {/* Contextual cards move to the right panel on wide screens. */}
           <div className="space-y-5 xl:hidden">
@@ -362,7 +505,8 @@ export function HomeView() {
           </div>
         </div>
         <aside className="hidden space-y-5 xl:block" aria-label="Friends activity">
-          <div className="sticky top-6 space-y-5">
+          {/* Clears the sticky 4rem app header. */}
+          <div className="sticky top-[5.5rem] space-y-5">
             <OnlineFriends delay={0.12} />
             <SuggestionsCard delay={0.18} />
           </div>

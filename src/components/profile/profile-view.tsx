@@ -6,7 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import {
-  BadgeCheck, Ban, CalendarDays, Camera, Check, ChevronDown, Flag, Lock, MessageCircle, MoreHorizontal, Pencil,
+  BadgeCheck, Ban, CalendarDays, Crown, Camera, Check, ChevronDown, Flag, Lock, MessageCircle, MoreHorizontal, Pencil,
   Settings, Share2, TrendingUp, UserCheck, UserMinus, UserPlus, UserX, X,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -27,6 +27,7 @@ import { cn, compactNumber, displayName, lastSeenLabel, mediaUrl } from "@/lib/u
 import type { ProfileSummary, Story } from "@/types/models";
 import { EditProfileDialog, MutualFriendsDialog, ScoreHistoryDialog } from "./profile-dialogs";
 import { ProfileViewsCard } from "./profile-views";
+import { THEME_GRADIENTS, type ProfileTheme } from "@/lib/premium-plans";
 
 function useProfile(username: string) {
   return useQuery({
@@ -86,6 +87,18 @@ export function ProfileView() {
   const [blocked, setBlocked] = useState<{ id: string; name: string } | null>(null);
   const [viewing, setViewing] = useState<{ src: string; label: string } | null>(null);
   const [coverFailed, setCoverFailed] = useState(false);
+
+  const premium = useQuery({
+    queryKey: ["profile-premium", p?.id],
+    enabled: Boolean(p?.id),
+    queryFn: async () => {
+      const { data, error } = await getSupabaseBrowserClient().rpc("profile_premium", { p_user: p!.id });
+      if (error) return { premium: false, theme: "default" as ProfileTheme };
+      return ((data ?? []) as { premium: boolean; theme: ProfileTheme }[])[0] ?? { premium: false, theme: "default" as ProfileTheme };
+    },
+    staleTime: 60_000,
+  });
+  const theme = premium.data?.theme ?? "default";
 
   const stories = useQuery({
     queryKey: qk.userStories(p?.id ?? ""),
@@ -237,7 +250,11 @@ export function ProfileView() {
             </ProtectedImage>
           </button>
         ) : (
-          <div className="brand-gradient h-full w-full opacity-90" />
+          <div
+            className="brand-gradient h-full w-full opacity-90"
+            style={theme !== "default" ? { background: THEME_GRADIENTS[theme] } : undefined}
+            data-profile-theme={theme}
+          />
         )}
       </div>
       {viewing ? <SecureViewer items={[{ src: viewing.src, kind: "image" }]} label={viewing.label} notice="Protected photo" watermark={marked} onClose={() => setViewing(null)} /> : null}
@@ -276,6 +293,11 @@ export function ProfileView() {
           <h1 className="flex items-center gap-1.5 font-display text-2xl font-extrabold tracking-tight">
             <span className="truncate">{name}</span>
             {p.is_verified ? <BadgeCheck className="h-5 w-5 shrink-0 text-brand" aria-label="Verified" /> : null}
+            {premium.data?.premium ? (
+              <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-brand-soft px-2 py-0.5 text-[11px] font-bold text-ink" title="Quick Chat Premium">
+                <Crown className="h-3.5 w-3.5 text-brand" aria-hidden /> Premium
+              </span>
+            ) : null}
           </h1>
           <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted">
             <span>@{p.username}</span>

@@ -299,7 +299,7 @@ export function CameraCapture({ onCapture, onClose }: { onCapture: (c: Captured)
 
   const onFile = async (file: File | undefined) => {
     if (!file) return;
-    const check = validateUpload(file.type, file.size, "snap");
+    const check = validateUpload(file.type, file.size, "snap", true);
     if (!check.ok) {
       toast.error(check.reason);
       return;

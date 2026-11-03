@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import {
-  ArrowLeft, FileClock, Flag, Gauge, Image as ImageIcon, LayoutDashboard, Megaphone, Menu as MenuIcon, Moon, Scale, Settings,
+  ArrowLeft, Crown, FileClock, Flag, Gauge, Image as ImageIcon, LayoutDashboard, Megaphone, Menu as MenuIcon, Moon, Scale, Settings,
   Sun, Users, X,
 } from "lucide-react";
 import { LogoMark } from "@/components/brand/logo";
@@ -27,6 +27,7 @@ const NAV: NavItem[] = [
   { href: "/admin/reports", label: "Reports", icon: Flag, min: "moderator", badge: "reports" },
   { href: "/admin/appeals", label: "Appeals", icon: Scale, min: "moderator", badge: "appeals" },
   { href: "/admin/content", label: "Content", icon: ImageIcon, min: "moderator" },
+  { href: "/admin/premium", label: "Premium", icon: Crown, min: "admin" },
   { href: "/admin/audit", label: "Audit log", icon: FileClock, min: "admin" },
   { href: "/admin/system", label: "System", icon: Gauge, min: "moderator" },
   { href: "/admin/settings", label: "Settings", icon: Settings, min: "admin" },

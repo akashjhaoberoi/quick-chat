@@ -3,12 +3,13 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Ban, Bell, ChevronRight, EyeOff, Lock, Palette, ShieldCheck, UserCog, type LucideIcon } from "lucide-react";
+import { Ban, Bell, ChevronRight, Crown, EyeOff, Lock, Palette, ShieldCheck, UserCog, type LucideIcon } from "lucide-react";
 import { InstallButton } from "@/components/pwa/install-button";
 import { cn } from "@/lib/utils";
 
 export const SETTINGS_NAV: { href: string; label: string; description: string; icon: LucideIcon }[] = [
   { href: "/settings/account", label: "Account", description: "Email, deactivation, deletion, appeals", icon: UserCog },
+  { href: "/settings/premium", label: "Premium", description: "Plan, payments and profile theme", icon: Crown },
   { href: "/settings/privacy", label: "Privacy", description: "Who can contact and find you", icon: Lock },
   { href: "/settings/media", label: "Media protection", description: "Photo visibility, watermarks, view once", icon: EyeOff },
   { href: "/settings/notifications", label: "Notifications", description: "Push, in-app and email alerts", icon: Bell },

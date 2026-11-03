@@ -1,5 +1,25 @@
 # Browser Compatibility Report — Quick Chat
 
+## Update 4 Nov 2026 — redesign, Premium, calls, location
+
+Tested this round in **Chromium only**, on a local production build. Testing was stopped early at the owner's request.
+
+| Area | Chromium | Chrome / Brave / Edge / Firefox / Safari engine / mobile emulation |
+|---|---|---|
+| Premium pricing page and webhooks (6 tests) | PASS | NOT TESTED this round |
+| Location (2 tests) | PASS | NOT TESTED this round |
+| Calls with effects, decline, permission denied (3 tests) | PASS | NOT TESTED (fake media is Chromium-only) |
+| Regression of existing suites after the redesign | 21 of 70 ran, all passed (stopped early) | NOT TESTED this round |
+
+**Video effects support (by design):**
+- **Colour filters** need WebGL plus canvas capture: current Chrome, Edge, Brave, Firefox and Safari (including iOS).
+- **Background effects** need WebGL2, OffscreenCanvas and VideoFrame: fastest in Chrome, Edge and Brave; slower in Firefox and Safari 16.4+. They are disabled with an explanation where unsupported.
+
+**Razorpay Checkout** is Razorpay's own window, which supports all of these browsers. It is NOT TESTED here because no keys were provided.
+
+---
+
+
 **Date:** 3 Nov 2026
 **Labels:**
 - **PASS:** actually tested and working.

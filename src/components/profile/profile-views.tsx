@@ -15,6 +15,8 @@ import { EmptyState, ErrorState, ListSkeleton } from "@/components/ui/feedback";
 import { PageContainer, PageHeader } from "@/components/shell/page-header";
 import { useMe } from "@/components/providers/session-provider";
 import { ReportDialog } from "@/components/moderation/report-dialog";
+import { DailyBarChart } from "@/components/admin/bar-chart";
+import { useEntitlement } from "@/components/premium/use-premium";
 import { api, errorMessage } from "@/lib/api/client";
 import { compactNumber, displayName, isOnline, lastSeenLabel, relativeTime } from "@/lib/utils";
 import type { ProfileViewStats, ProfileVisitor } from "@/types/models";
@@ -133,6 +135,28 @@ function VisitorRow({ v }: { v: ProfileVisitor }) {
   );
 }
 
+/** Premium: daily views for the last 30 days (server refuses non-Premium callers). */
+function ViewsAnalytics() {
+  const unlocked = useEntitlement("profile_analytics");
+  const daily = useQuery({
+    queryKey: ["profile-views", "daily"],
+    enabled: unlocked,
+    queryFn: () => api.get<{ days: { day: string; views: number; uniqueVisitors: number }[] }>("/api/premium/analytics"),
+  });
+  if (!unlocked) {
+    return (
+      <Link href="/premium" className="block rounded-2xl border border-dashed border-border p-3 text-sm text-ink-2 hover:bg-surface-2">
+        <span className="font-semibold text-ink">Profile analytics</span> — see daily views and unique visitors for the last 30 days with Quick Chat Premium.
+      </Link>
+    );
+  }
+  return daily.data ? (
+    <DailyBarChart data={daily.data.days.map((d) => ({ day: d.day, count: d.views }))} days={29} unit="views" title="Profile views, last 30 days" />
+  ) : (
+    <ListSkeleton rows={2} />
+  );
+}
+
 /** /profile-views — who viewed my profile. */
 export function ProfileViewsPage() {
   const me = useMe();
@@ -164,6 +188,7 @@ export function ProfileViewsPage() {
             </div>
           ))}
         </div>
+        <ViewsAnalytics />
         <section aria-label="Recent visitors" className="rounded-3xl border border-border bg-surface px-4">
           {views.isPending ? (
             <ListSkeleton rows={5} />

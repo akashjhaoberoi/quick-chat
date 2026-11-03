@@ -10,8 +10,8 @@ export default function manifest(): MetadataRoute.Manifest {
     scope: "/",
     display: "standalone",
     orientation: "portrait",
-    background_color: "#0b0a12",
-    theme_color: "#7c5cff",
+    background_color: "#FFF8F0",
+    theme_color: "#FF9F43",
     categories: ["social", "communication"],
     icons: [
       { src: "/icons/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any" },

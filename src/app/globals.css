@@ -3,55 +3,73 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 /* ---------------------------------------------------------------------------
-   Quick Chat design tokens
-   Brand: "Pulse" violet → "Spark" coral, on calm ink neutrals.
+   Quick Chat design tokens — light orange
+   Palette: primary #FF9F43, secondary #FFB76B, accent #F47B20,
+   soft #FFE4C7, background #FFF8F0, ink #242424.
+
+   Contrast rules (WCAG 2.x, checked):
+   - Orange fills (--brand, --accent, .brand-gradient) carry DARK text
+     (--brand-ink #242424: 7.6:1 on #FF9F43, 5.7:1 on #F47B20). White on these
+     oranges fails (2.0–2.7:1), so it is never used for text on them.
+   - Orange TEXT uses --brand-text / --accent-text, darker oranges that pass
+     4.5:1 on every light surface (#A84C06: 5.7:1 on white, 4.6:1 on
+     --brand-soft). `text-brand` / `text-accent` resolve to these through the
+     --text-color-* theme keys below; bg-/border-/ring- utilities keep the
+     bright brand orange.
+   - Outgoing chat bubbles keep white text, so --bubble-me is a deeper orange
+     (white ≥4.6:1).
 --------------------------------------------------------------------------- */
 :root {
-  --bg: #f6f5fb;
+  --bg: #fff8f0;
   --surface: #ffffff;
-  --surface-2: #f1effa;
-  --surface-3: #e9e6f6;
-  --border: #e3e0ef;
-  --ink: #15131f;
-  --ink-2: #4a4760;
-  --muted: #6e6a85;
-  --brand: #7c5cff;
-  --brand-ink: #ffffff;
-  --brand-soft: #efeaff;
-  --accent: #ff5e7e;
-  --accent-soft: #ffe7ec;
+  --surface-2: #fff1e3;
+  --surface-3: #fce6cf;
+  --border: #f2dcc6;
+  --ink: #242424;
+  --ink-2: #4a4038;
+  --muted: #6b5f55;
+  --brand: #ff9f43;
+  --brand-ink: #242424;
+  --brand-soft: #ffe4c7;
+  --brand-text: #a84c06;
+  --accent: #f47b20;
+  --accent-soft: #ffe9d6;
+  --accent-text: #a8410a;
   --success: #12b76a;
-  --warning: #f79009;
-  --danger: #e5484d;
-  --danger-soft: #fdecec;
-  --ring: #7c5cff66;
-  --bubble-me: linear-gradient(135deg, #7c5cff 0%, #9b6bff 55%, #c065f5 100%);
+  --warning: #e9a30a;
+  --danger: #d92d20;
+  --danger-soft: #fdecea;
+  --ring: #ff9f4366;
+  --bubble-me: linear-gradient(135deg, #c4520e 0%, #b04a0c 100%);
   --bubble-them: #ffffff;
-  --shadow-color: 250 30% 20%;
+  --shadow-color: 28 55% 28%;
   color-scheme: light;
 }
 
 .dark {
-  --bg: #0b0a12;
-  --surface: #14121e;
-  --surface-2: #1b1928;
-  --surface-3: #242134;
-  --border: #2b2840;
-  --ink: #f4f2fb;
-  --ink-2: #c9c5dc;
-  --muted: #9893b1;
-  --brand: #8e72ff;
-  --brand-ink: #ffffff;
-  --brand-soft: #251f45;
-  --accent: #ff6e8b;
-  --accent-soft: #3a1823;
+  --bg: #16110c;
+  --surface: #1e1812;
+  --surface-2: #282019;
+  --surface-3: #332920;
+  --border: #3a2e24;
+  --ink: #fbf3ea;
+  --ink-2: #e3d4c4;
+  --muted: #b3a08d;
+  --brand: #ff9f43;
+  --brand-ink: #242424;
+  --brand-soft: #3a2614;
+  --brand-text: #ffb76b;
+  --accent: #ff8a3d;
+  --accent-soft: #3d2210;
+  --accent-text: #ffa866;
   --success: #32d583;
-  --warning: #fdb022;
+  --warning: #fdc23a;
   --danger: #f2555a;
   --danger-soft: #3b1517;
-  --ring: #8e72ff80;
-  --bubble-them: #1f1c2e;
-  --shadow-color: 250 50% 2%;
+  --ring: #ff9f4380;
+  --bubble-me: linear-gradient(135deg, #c4520e 0%, #b04a0c 100%);
+  --bubble-them: #282019;
+  --shadow-color: 25 45% 2%;
   color-scheme: dark;
 }
 
@@ -73,6 +91,9 @@
   --color-warning: var(--warning);
   --color-danger: var(--danger);
   --color-danger-soft: var(--danger-soft);
+  /* Text-only overrides: `text-brand` / `text-accent` use the text-safe oranges. */
+  --text-color-brand: var(--brand-text);
+  --text-color-accent: var(--accent-text);
   --font-sans: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
   --font-display: var(--font-sora), var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
   --radius-xl: 1rem;
@@ -111,24 +132,35 @@ body {
   background: color-mix(in oklab, var(--brand) 30%, transparent);
 }
 
+/* --brand-text keeps the focus ring ≥3:1 against light and dark surfaces. */
 :focus-visible {
-  outline: 2px solid var(--brand);
+  outline: 2px solid var(--brand-text);
   outline-offset: 2px;
 }
 
+/* Subtle secondary → primary → accent sweep. Text on it is dark ink; this rule
+   is unlayered on purpose so it wins over `text-white` utilities still used on
+   gradient surfaces elsewhere (white on light orange fails WCAG). */
 .brand-gradient {
-  background-image: linear-gradient(120deg, #7c5cff 0%, #b45cf5 45%, #ff5e7e 100%);
+  background-image: linear-gradient(135deg, #ffb76b 0%, #ff9f43 55%, #f47b20 100%);
+  color: var(--brand-ink);
+}
+
+/* Same correction for solid orange fills that still ask for white text. */
+.bg-brand.text-white,
+.bg-accent.text-white {
+  color: var(--brand-ink);
 }
 
 .brand-text {
-  background-image: linear-gradient(120deg, #7c5cff 0%, #b45cf5 45%, #ff5e7e 100%);
+  background-image: linear-gradient(120deg, var(--brand-text) 0%, var(--accent-text) 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
 }
 
 .story-ring {
-  background: conic-gradient(from 210deg, #7c5cff, #c065f5, #ff5e7e, #ffb36b, #7c5cff);
+  background: conic-gradient(from 210deg, #ffb76b, #ff9f43, #f47b20, #ff9f43, #ffb76b);
 }
 
 .skeleton {

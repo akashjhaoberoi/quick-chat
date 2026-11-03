@@ -28,6 +28,8 @@ import { ParticipantTile, primaryVideo, QualityBars, VideoView } from "./partici
 import { startRingtone } from "./ringtone";
 import { isLiveCall, type CallDetails, type JoinCallResponse } from "./types";
 import { useCallRoom } from "./use-call-room";
+import { EffectsMenu } from "./effects-menu";
+import { useVideoEffects } from "./use-video-effects";
 
 const OUTGOING_TIMEOUT_MS = 45_000;
 const REMOTE_GONE_MS = 30_000;
@@ -43,11 +45,18 @@ type Phase =
   | { name: "ended"; reason: "left" | "no_answer" | "cancelled" }
   | { name: "failed"; message: string };
 
+export type CallScreenProps = {
+  /** Premium entitlement for video effects (see PREMIUM_VIDEO_EFFECTS). Default true: nothing locked. */
+  premiumUnlocked?: boolean;
+  /** Called when the user taps a locked premium effect. */
+  onUpgrade?: () => void;
+};
+
 /** Route component for /calls/[id]; keys the session by call id so state never leaks between calls. */
-export function CallScreen() {
+export function CallScreen({ premiumUnlocked = true, onUpgrade }: CallScreenProps = {}) {
   const params = useParams<{ id: string }>();
   const id = params.id;
-  return <CallSession key={id} callId={id} />;
+  return <CallSession key={id} callId={id} premiumUnlocked={premiumUnlocked} onUpgrade={onUpgrade} />;
 }
 
 function Shell({ children, className }: { children: ReactNode; className?: string }) {
@@ -90,7 +99,7 @@ function ControlButton({
   );
 }
 
-function CallSession({ callId }: { callId: string }) {
+function CallSession({ callId, premiumUnlocked, onUpgrade }: { callId: string; premiumUnlocked: boolean; onUpgrade?: () => void }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const accept = searchParams.get("accept") === "1";
@@ -117,6 +126,18 @@ function CallSession({ callId }: { callId: string }) {
       setPhase((p) => (p.name === "connected" || p.name === "joining" ? { name: "lost" } : p));
     },
   });
+
+  // Video effects follow the camera track: the preview track before joining
+  // (same object that gets published), then the published camera track.
+  const cameraPub = room?.localParticipant.getTrackPublication(Track.Source.Camera);
+  const connected = phase.name === "connected";
+  const effectsTrack = connected ? ((cameraPub?.track as LocalVideoTrack | undefined) ?? null) : preview;
+  const effects = useVideoEffects({
+    track: effectsTrack,
+    cameraOn: connected ? Boolean(cameraPub?.track && !cameraPub.isMuted) : Boolean(preview),
+    premiumUnlocked,
+  });
+  const prepareEffects = effects.prepare;
 
   useEffect(() => {
     mountedRef.current = true;
@@ -188,6 +209,9 @@ function CallSession({ callId }: { callId: string }) {
       setFacing("user");
       setPreview(video);
       setPhase({ name: "joining" });
+      // Apply the saved effect before publishing (bounded wait) so the first
+      // frames others see are already processed; runs alongside the join request.
+      const effectsReady = video ? prepareEffects(video) : Promise.resolve();
       let res: JoinCallResponse;
       try {
         res = await api.post<JoinCallResponse>(`/api/calls/${callId}/join`);
@@ -206,6 +230,7 @@ function CallSession({ callId }: { callId: string }) {
       joinedRef.current = true;
       setCall(res.call);
       if (!mountedRef.current) return;
+      await effectsReady;
       try {
         await connect({ url: res.url, token: res.token, audio, video });
         if (mountedRef.current) setPhase({ name: "connected" });
@@ -216,7 +241,7 @@ function CallSession({ callId }: { callId: string }) {
       }
       setPreview(null);
     },
-    [callId, connect, details, setCall],
+    [callId, connect, details, setCall, prepareEffects],
   );
 
   const hangUp = useCallback(
@@ -342,14 +367,21 @@ function CallSession({ callId }: { callId: string }) {
     if (supportsFacingMode()) {
       const next = facing === "user" ? "environment" : "user";
       run(async () => {
+        // LiveKit restarts an attached effect processor with the new camera;
+        // resync covers the case where it was dropped along the way.
         await track.restartTrack({ facingMode: next, resolution: VIDEO_RESOLUTION });
         setFacing(next);
+        effects.resync();
       }, "Couldn't switch camera.");
     } else {
       const current = room.getActiveDevice("videoinput");
       const idx = cameras.findIndex((c) => c.deviceId === current);
       const next = cameras[(idx + 1) % cameras.length];
-      if (next) run(() => room.switchActiveDevice("videoinput", next.deviceId), "Couldn't switch camera.");
+      if (next)
+        run(async () => {
+          await room.switchActiveDevice("videoinput", next.deviceId);
+          effects.resync();
+        }, "Couldn't switch camera.");
     }
   };
 
@@ -678,6 +710,17 @@ function CallSession({ callId }: { callId: string }) {
           <ControlButton label="Switch camera" onClick={flipCamera}>
             <SwitchCamera />
           </ControlButton>
+        ) : null}
+        {call.kind === "video" && local ? (
+          <EffectsMenu
+            selection={effects.selection}
+            support={effects.support}
+            status={effects.status}
+            cameraOn={camOn}
+            onChoose={effects.choose}
+            premiumUnlocked={premiumUnlocked}
+            onUpgrade={onUpgrade}
+          />
         ) : null}
         {canShareScreen && local ? (
           <ControlButton label={sharing ? "Stop sharing screen" : "Share screen"} active={!sharing} onClick={toggleShare}>

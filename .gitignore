@@ -47,3 +47,6 @@ next-env.d.ts
 .env*.local
 !.env.example
 /quick-chat-database-setup.sql
+
+# MediaPipe runtime, copied from node_modules at build time
+/public/mediapipe/

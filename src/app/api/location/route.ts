@@ -11,7 +11,8 @@ const body = z.object({
   lat: z.number().min(-90).max(90),
   lng: z.number().min(-180).max(180),
   accuracy: z.number().min(0).max(100_000).nullable().optional(),
-  minutes: z.union([z.literal(15), z.literal(60), z.literal(480)]),
+  // 1440 = "Until I stop" (ends automatically after 24 h).
+  minutes: z.union([z.literal(15), z.literal(60), z.literal(480), z.literal(1440)]),
 });
 
 /** POST /api/location — start a time-boxed live location share; returns the location message. */

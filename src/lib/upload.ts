@@ -103,7 +103,8 @@ export function uploadMedia(input: File | Blob, opts: UploadOptions): UploadHand
       durationMs = d.durationMs;
     }
 
-    const check = validateUpload(file.type, file.size, opts.purpose);
+    // Pre-check with the larger Premium limits; the server applies the account's real limits.
+    const check = validateUpload(file.type, file.size, opts.purpose, true);
     if (!check.ok) throw new ClientApiError(400, "invalid_file", check.reason);
     if (cancelled) throw new ClientApiError(0, "cancelled", "Upload cancelled.");
 

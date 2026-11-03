@@ -9,7 +9,7 @@ type Size = "sm" | "md" | "lg" | "icon" | "icon-sm";
 
 const variants: Record<Variant, string> = {
   primary: "bg-brand text-brand-ink hover:brightness-110 active:brightness-95 shadow-sm",
-  gradient: "brand-gradient text-white hover:brightness-110 active:brightness-95 shadow-[var(--shadow-soft)]",
+  gradient: "brand-gradient text-brand-ink hover:brightness-110 active:brightness-95 shadow-[var(--shadow-soft)]",
   secondary: "bg-surface-2 text-ink hover:bg-surface-3",
   outline: "border border-border bg-surface text-ink hover:bg-surface-2",
   ghost: "text-ink-2 hover:bg-surface-2 hover:text-ink",

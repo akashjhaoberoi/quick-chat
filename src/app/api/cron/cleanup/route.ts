@@ -23,6 +23,9 @@ export const GET = handler({ auth: "cron" }, async () => {
   // Spent view-once media is marked pending_delete here, so step 2 removes it in this same run.
   const { data: mediaMaintenance, error: mediaError } = await admin.rpc("run_media_maintenance");
   if (mediaError) log("error", "media_maintenance_failed", { error: mediaError.message });
+  // Lapsed Premium access → expired; abandoned checkouts → cancelled.
+  const { data: premiumMaintenance, error: premiumError } = await admin.rpc("run_premium_maintenance");
+  if (premiumError) log("error", "premium_maintenance_failed", { error: premiumError.message });
 
   const { data: pending } = await admin
     .from("media_assets")
@@ -53,5 +56,5 @@ export const GET = handler({ auth: "cron" }, async () => {
     finished_at: new Date().toISOString(),
   });
   log("info", "cron_cleanup", { deleted, failures: failures.length, pushSent: push.sent });
-  return { maintenance, mediaMaintenance, deleted, failures, push };
+  return { maintenance, mediaMaintenance, premiumMaintenance, deleted, failures, push };
 });

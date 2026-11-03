@@ -34,7 +34,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       const r = resolve(theme);
       setResolved(r);
       document.documentElement.classList.toggle("dark", r === "dark");
-      document.querySelector('meta[name="theme-color"]')?.setAttribute("content", r === "dark" ? "#0b0a12" : "#f6f5fb");
+      document.querySelector('meta[name="theme-color"]')?.setAttribute("content", r === "dark" ? "#16110C" : "#FFF8F0");
     };
     apply();
     const mq = window.matchMedia("(prefers-color-scheme: dark)");

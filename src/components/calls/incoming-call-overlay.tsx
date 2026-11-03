@@ -45,6 +45,9 @@ function IncomingCallWatcher({ userId }: { userId: string }) {
     queryKey: [...qk.calls, "incoming", userId],
     meta: { silent: true },
     staleTime: 0,
+    // Realtime normally delivers invitations instantly; this catches any missed
+    // while the subscription was (re)connecting.
+    refetchInterval: 15_000,
     queryFn: async () => {
       const since = new Date(Date.now() - RING_WINDOW_MS).toISOString();
       const { data, error } = await getSupabaseBrowserClient()

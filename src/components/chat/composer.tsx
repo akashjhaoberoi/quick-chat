@@ -188,7 +188,7 @@ function LocationDialog({ conversationId, onClose, onStatic }: { conversationId:
     }
   };
 
-  const shareLive = async (minutes: 15 | 60 | 480) => {
+  const shareLive = async (minutes: 15 | 60 | 480 | 1440) => {
     setBusy(String(minutes));
     try {
       const pos = await getPosition();
@@ -223,13 +223,14 @@ function LocationDialog({ conversationId, onClose, onStatic }: { conversationId:
           <MapPin className="h-4 w-4" /> Send current location
         </Button>
         <p className="pt-2 text-xs font-bold uppercase tracking-wide text-muted">Share live location for</p>
-        <div className="grid grid-cols-3 gap-2">
-          {([15, 60, 480] as const).map((m) => (
+        <div className="grid grid-cols-2 gap-2">
+          {([15, 60, 480, 1440] as const).map((m) => (
             <Button key={m} variant="secondary" loading={busy === String(m)} disabled={Boolean(busy)} onClick={() => shareLive(m)}>
-              <Radio className="h-4 w-4" /> {m === 15 ? "15 min" : m === 60 ? "1 hour" : "8 hours"}
+              <Radio className="h-4 w-4" /> {m === 15 ? "15 min" : m === 60 ? "1 hour" : m === 480 ? "8 hours" : "Until I stop"}
             </Button>
           ))}
         </div>
+        <p className="text-xs text-muted">“Until I stop” keeps sharing while Quick Chat is open and ends automatically after 24 hours.</p>
       </div>
     </Dialog>
   );
@@ -322,7 +323,7 @@ export function Composer({
     const next: Staged[] = [];
     for (const file of Array.from(files)) {
       const mime = baseMime(file.type);
-      const check = validateUpload(mime, file.size, "message");
+      const check = validateUpload(mime, file.size, "message", true);
       if (!check.ok) {
         toast.error(`${file.name}: ${check.reason}`);
         continue;

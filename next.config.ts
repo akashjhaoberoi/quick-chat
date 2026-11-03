@@ -27,19 +27,23 @@ const firebase = [
   "https://firebase.googleapis.com",
 ];
 
+// Razorpay Checkout (Quick Chat Premium): its script, its iframe and its telemetry.
+const razorpay = ["https://checkout.razorpay.com", "https://api.razorpay.com", "https://lumberjack.razorpay.com"];
+
 const mediaSources = ["'self'", "blob:", "data:", ...supabase, ...r2Public, ...r2Account];
 
 const csp = [
   "default-src 'self'",
   // Next.js injects inline bootstrap scripts; a nonce would force every page
   // to render dynamically, which defeats the static app shell.
-  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""} https://www.gstatic.com`,
+  // 'wasm-unsafe-eval': the self-hosted MediaPipe runtime (call background effects) compiles WebAssembly.
+  `script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'${isDev ? " 'unsafe-eval'" : ""} https://www.gstatic.com https://checkout.razorpay.com`,
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' https://fonts.gstatic.com data:",
-  `img-src ${[...mediaSources, "https://*.tile.openstreetmap.org", "https://lh3.googleusercontent.com"].join(" ")}`,
+  `img-src ${[...mediaSources, "https://*.tile.openstreetmap.org", "https://lh3.googleusercontent.com", "https://cdn.razorpay.com"].join(" ")}`,
   `media-src ${mediaSources.join(" ")}`,
-  `connect-src ${["'self'", ...supabase, ...livekit, ...r2Account, ...r2Public, ...firebase, isDev ? "ws:" : ""].filter(Boolean).join(" ")}`,
-  "frame-src 'self' https://www.openstreetmap.org",
+  `connect-src ${["'self'", ...supabase, ...livekit, ...r2Account, ...r2Public, ...firebase, ...razorpay, isDev ? "ws:" : ""].filter(Boolean).join(" ")}`,
+  "frame-src 'self' https://www.openstreetmap.org https://api.razorpay.com https://checkout.razorpay.com",
   "worker-src 'self' blob:",
   "frame-ancestors 'none'",
   "base-uri 'self'",

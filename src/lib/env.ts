@@ -82,6 +82,11 @@ const serverSchema = z.object({
   RESEND_FROM_EMAIL: z.string().default("Quick Chat <no-reply@quickchat.akarikatechnologies.in>"),
   REDIS_URL: optionalString,
   CRON_SECRET: optionalString,
+  // Razorpay (Quick Chat Premium). The key id is public (Checkout needs it);
+  // the key secret and webhook secret never leave the server.
+  RAZORPAY_KEY_ID: optionalString,
+  RAZORPAY_KEY_SECRET: optionalString,
+  RAZORPAY_WEBHOOK_SECRET: optionalString,
   ADMIN_REQUIRE_MFA: z
     .enum(["true", "false"])
     .default("true")
@@ -112,6 +117,7 @@ export type IntegrationStatus = {
   email: boolean;
   redis: boolean;
   cron: boolean;
+  payments: boolean;
 };
 
 export function integrationStatus(): IntegrationStatus {
@@ -128,6 +134,7 @@ export function integrationStatus(): IntegrationStatus {
     email: Boolean(env.RESEND_API_KEY),
     redis: Boolean(env.REDIS_URL),
     cron: Boolean(env.CRON_SECRET),
+    payments: Boolean(env.RAZORPAY_KEY_ID && env.RAZORPAY_KEY_SECRET && env.RAZORPAY_WEBHOOK_SECRET),
   };
 }
 
@@ -147,6 +154,7 @@ export function validateEnvironment(): { errors: string[]; warnings: string[] } 
   if (!status.livekit) warnings.push("LiveKit is not configured — audio/video calls are disabled.");
   if (!status.push) warnings.push("Firebase Cloud Messaging is not fully configured — browser push notifications are disabled.");
   if (!status.email) warnings.push("RESEND_API_KEY is missing — security alert emails are disabled.");
+  if (!status.payments) warnings.push("Razorpay is not configured (RAZORPAY_KEY_ID / RAZORPAY_KEY_SECRET / RAZORPAY_WEBHOOK_SECRET) — Premium checkout is disabled.");
   if (!status.redis) warnings.push("REDIS_URL is missing — rate limiting falls back to per-instance memory.");
   if (!status.cron) warnings.push("CRON_SECRET is missing — /api/cron/* endpoints are disabled.");
   for (const key of Object.keys(process.env)) {

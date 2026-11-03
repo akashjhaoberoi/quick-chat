@@ -41,6 +41,15 @@ export const MAX_BYTES: Record<MediaKind, number> = {
 
 export const DAILY_UPLOAD_BYTES = 1024 * 1024 * 1024;
 
+/** Premium "extended_uploads" limits (video stays at the storage bucket's 100 MB cap). */
+export const MAX_BYTES_PREMIUM: Record<MediaKind, number> = {
+  image: 30 * 1024 * 1024,
+  video: 100 * 1024 * 1024,
+  audio: 40 * 1024 * 1024,
+  document: 50 * 1024 * 1024,
+};
+export const DAILY_UPLOAD_BYTES_PREMIUM = 5 * 1024 * 1024 * 1024;
+
 const PURPOSE_KINDS: Record<MediaPurpose, MediaKind[]> = {
   avatar: ["image"],
   cover: ["image"],
@@ -56,12 +65,25 @@ export function baseMime(mime: string): string {
   return mime.split(";")[0].trim().toLowerCase();
 }
 
-export function validateUpload(mime: string, size: number, purpose: MediaPurpose): { ok: true; kind: MediaKind } | { ok: false; reason: string } {
+/**
+ * `premium` selects the extended limits. The browser pre-checks with the
+ * larger limits; the server decides with the user's real entitlement.
+ */
+export function validateUpload(
+  mime: string,
+  size: number,
+  purpose: MediaPurpose,
+  premium = false,
+): { ok: true; kind: MediaKind } | { ok: false; reason: string } {
+  const limits = premium ? MAX_BYTES_PREMIUM : MAX_BYTES;
   const kind = MIME_KIND[baseMime(mime)];
   if (!kind) return { ok: false, reason: "This file type isn't supported." };
   if (!PURPOSE_KINDS[purpose].includes(kind)) return { ok: false, reason: `A ${kind} can't be used here.` };
   if (size <= 0) return { ok: false, reason: "The file is empty." };
-  if (size > MAX_BYTES[kind]) return { ok: false, reason: `Files of this type must be under ${Math.round(MAX_BYTES[kind] / 1024 / 1024)} MB.` };
+  if (size > limits[kind]) {
+    const upgrade = !premium && MAX_BYTES_PREMIUM[kind] > MAX_BYTES[kind] ? ` Premium raises this to ${Math.round(MAX_BYTES_PREMIUM[kind] / 1024 / 1024)} MB.` : "";
+    return { ok: false, reason: `Files of this type must be under ${Math.round(limits[kind] / 1024 / 1024)} MB.${upgrade}` };
+  }
   return { ok: true, kind };
 }
 
