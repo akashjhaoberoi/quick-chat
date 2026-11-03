@@ -1,5 +1,26 @@
 # Deployment Report — Quick Chat
 
+## Update 4 Nov 2026 — commit `a5ee74a`
+
+**GitHub and Vercel:**
+- `main` = `a5ee74a`.
+- The Vercel production deployment is **READY**.
+
+**Live checks after the deployment:**
+- `/api/health` reports the site and database ok, and `payments: false` (no Razorpay keys yet).
+- The login page loads.
+- `/premium` and `/settings/premium` redirect signed-out visitors to sign-in.
+- The webhook returns 503 until Razorpay is configured.
+
+**Owner steps to finish:**
+1. **Supabase → SQL Editor:** run `quick-chat-premium-update.sql` (Premium tables + "Until I stop" location). It only adds. Until it runs, Premium stays hidden or off and "Until I stop" shows an error; everything else works.
+2. **Vercel environment variables:** add `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET` and `RAZORPAY_WEBHOOK_SECRET` (test keys first), then redeploy.
+3. **Razorpay:** add the webhook `https://quickchat.akarikatechnologies.me/api/premium/webhook` (events listed in PAYMENT_INTEGRATION_REPORT.md) and enable Subscriptions.
+4. **Tax wording:** confirm the pricing page wording ("include all applicable taxes").
+
+---
+
+
 **Date:** 3 Nov 2026
 
 ## What is deployed
