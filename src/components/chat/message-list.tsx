@@ -543,6 +543,7 @@ export function MessageList(props: MessageListProps) {
       pinned_at: null,
       pinned_by: null,
       created_at: o.createdAt,
+      media_mode: o.mediaMode ?? "normal",
       attachments: [],
       reactions: [],
       starred: false,
@@ -650,7 +651,9 @@ export function MessageList(props: MessageListProps) {
       return list;
     }
     if (m.type !== "system") list.push({ label: "Reply", icon: <CornerUpLeft />, onSelect: () => props.onReply(m) });
-    if (!["system", "call", "story_reply"].includes(m.type)) list.push({ label: "Forward", icon: <Forward />, onSelect: () => setForwarding(m) });
+    // Protected and view-once media can't be forwarded (enforced by forward_message too).
+    const forwardable = m.media_mode !== "protected" && m.media_mode !== "view_once";
+    if (!["system", "call", "story_reply"].includes(m.type) && forwardable) list.push({ label: "Forward", icon: <Forward />, onSelect: () => setForwarding(m) });
     if (m.body) {
       list.push({
         label: "Copy text",

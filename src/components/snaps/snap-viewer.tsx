@@ -8,19 +8,14 @@ import { AlertTriangle, Info, Loader2, Volume2, VolumeX, X } from "lucide-react"
 import { Avatar } from "@/components/ui/avatar";
 import { FitFrame } from "@/components/camera/fit-frame";
 import { OverlayLayer } from "@/components/camera/overlay-layer";
+import { PrivacyShield, Watermark } from "@/components/media/protected-media";
 import { api } from "@/lib/api/client";
+import { isScreenshotShortcut, usePageConcealed } from "@/lib/media-protection";
 import { mediaUrl } from "@/lib/utils";
 import type { UserCard } from "@/types/models";
 import type { OpenedSnap } from "./data";
 
 const RING = 2 * Math.PI * 16;
-
-/** Common OS screenshot shortcuts. Best-effort: most OS shortcuts never reach the page. */
-function isScreenshotShortcut(e: KeyboardEvent) {
-  if (e.key === "PrintScreen" || e.code === "PrintScreen") return true;
-  if (e.metaKey && e.shiftKey && ["Digit3", "Digit4", "Digit5", "KeyS"].includes(e.code)) return true;
-  return false;
-}
 
 /**
  * Full-screen, auto-closing snap viewer. Media is requested only after the
@@ -34,6 +29,8 @@ export function SnapViewer({ snap, sender, onClose }: { snap: OpenedSnap; sender
   const [aspect, setAspect] = useState(9 / 16);
   const videoRef = useRef<HTMLVideoElement>(null);
   const reported = useRef(false);
+  // Hide the Snap while the window is unfocused or the page is in the background.
+  const concealed = usePageConcealed({ onBlur: true });
   const closeRef = useRef(onClose);
   useEffect(() => {
     closeRef.current = onClose;
@@ -111,7 +108,7 @@ export function SnapViewer({ snap, sender, onClose }: { snap: OpenedSnap; sender
       role="dialog"
       aria-modal="true"
       aria-label={`Snap from ${sender?.display_name ?? "a friend"}`}
-      className="fixed inset-0 z-[90] select-none bg-black text-white"
+      className="qc-protected fixed inset-0 z-[90] select-none bg-black text-white"
       initial={{ opacity: 0, scale: 0.98 }}
       animate={{ opacity: 1, scale: 1 }}
       onContextMenu={(e) => e.preventDefault()}
@@ -164,6 +161,8 @@ export function SnapViewer({ snap, sender, onClose }: { snap: OpenedSnap; sender
             />
           )}
           <OverlayLayer overlays={snap.overlays} />
+          <Watermark />
+          <PrivacyShield show={concealed} />
         </FitFrame>
       </div>
 

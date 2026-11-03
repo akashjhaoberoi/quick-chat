@@ -23,12 +23,23 @@ export type ReplyPreview = {
 
 export type ChatReaction = { user_id: string; emoji: string };
 
+/** View-once status as seen by the current user (resolved server-side). */
+export type ViewOnceState = {
+  /** Recipient: end of my view window; null until I open it. */
+  my_view_expires_at: string | null;
+  /** Sender: how many people have opened it. */
+  opened_count: number;
+  /** The media was deleted (everyone viewed it, or it went unopened for 14 days). */
+  expired: boolean;
+};
+
 /** A message as rendered by the chat UI. */
 export type ChatMessage = Message & {
   attachments: AttachmentInfo[];
   reactions: ChatReaction[];
   starred: boolean;
   reply_to: ReplyPreview | null;
+  view_once?: ViewOnceState;
 };
 
 export type MessagePage = { messages: ChatMessage[]; hasMore: boolean };

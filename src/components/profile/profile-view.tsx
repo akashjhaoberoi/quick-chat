@@ -18,12 +18,15 @@ import { EmptyState, ErrorState, Skeleton } from "@/components/ui/feedback";
 import { PageContainer } from "@/components/shell/page-header";
 import { useMe } from "@/components/providers/session-provider";
 import { ReportDialog } from "@/components/moderation/report-dialog";
+import { ProtectedImage, Watermark } from "@/components/media/protected-media";
+import { SecureViewer } from "@/components/media/secure-viewer";
 import { api } from "@/lib/api/client";
 import { qk } from "@/lib/query-keys";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { cn, compactNumber, displayName, lastSeenLabel, mediaUrl } from "@/lib/utils";
 import type { ProfileSummary, Story } from "@/types/models";
 import { EditProfileDialog, MutualFriendsDialog, ScoreHistoryDialog } from "./profile-dialogs";
+import { ProfileViewsCard } from "./profile-views";
 
 function useProfile(username: string) {
   return useQuery({
@@ -81,6 +84,8 @@ export function ProfileView() {
   const [mutualOpen, setMutualOpen] = useState(false);
   const [reporting, setReporting] = useState(false);
   const [blocked, setBlocked] = useState<{ id: string; name: string } | null>(null);
+  const [viewing, setViewing] = useState<{ src: string; label: string } | null>(null);
+  const [coverFailed, setCoverFailed] = useState(false);
 
   const stories = useQuery({
     queryKey: qk.userStories(p?.id ?? ""),
@@ -98,6 +103,14 @@ export function ProfileView() {
   useEffect(() => {
     if (p) document.title = `${displayName(p)} (@${p.username}) · Quick Chat`;
   }, [p]);
+
+  // Count a visit to someone else's profile (the server ignores repeats within
+  // 24 h). Automated browsers report navigator.webdriver and aren't counted.
+  const viewedId = p && !isMe ? p.id : null;
+  useEffect(() => {
+    if (!viewedId || navigator.webdriver) return;
+    void api.post("/api/profile-views", { profileId: viewedId }).catch(() => undefined);
+  }, [viewedId]);
 
   const refresh = () =>
     Promise.all([
@@ -194,7 +207,9 @@ export function ProfileView() {
   const canFollow = !isMe && (!p.is_private || p.is_friend);
   const lastSeen = !isMe ? lastSeenLabel(p.last_seen_at) : null;
   const busy = action.isPending;
-  const coverSrc = mediaUrl(p.cover_media_id);
+  const coverSrc = !coverFailed ? mediaUrl(p.cover_media_id) : undefined;
+  // Watermark other people's photos when their owner asked for it.
+  const marked = !isMe && p.media_watermark !== false;
 
   const share = async () => {
     const url = `${window.location.origin}/profile/${p.username}`;
@@ -210,17 +225,22 @@ export function ProfileView() {
   };
 
   const avatarEl = <Avatar mediaId={p.avatar_media_id} name={name} size="2xl" ring={ring} />;
+  const photoSrc = mediaUrl(p.avatar_media_id);
 
   return (
     <PageContainer className="pb-10">
       <div className="relative h-40 overflow-hidden bg-surface-2 md:mt-4 md:h-56 md:rounded-3xl">
         {coverSrc ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={coverSrc} alt="" className="h-full w-full object-cover" />
+          <button type="button" className="block h-full w-full" onClick={() => setViewing({ src: coverSrc, label: `${name}'s cover photo` })} aria-label="View cover photo">
+            <ProtectedImage src={coverSrc} className="h-full w-full" imgClassName="h-full w-full object-cover" onError={() => setCoverFailed(true)}>
+              {marked ? <Watermark compact /> : null}
+            </ProtectedImage>
+          </button>
         ) : (
           <div className="brand-gradient h-full w-full opacity-90" />
         )}
       </div>
+      {viewing ? <SecureViewer items={[{ src: viewing.src, kind: "image" }]} label={viewing.label} notice="Protected photo" watermark={marked} onClose={() => setViewing(null)} /> : null}
 
       <div className="px-4 md:px-6">
         <div className="-mt-14 flex items-end justify-between gap-3">
@@ -229,6 +249,10 @@ export function ProfileView() {
               <Link href={`/stories/view/${p.id}`} aria-label={`View ${name}'s story`} className="block rounded-full">
                 {avatarEl}
               </Link>
+            ) : photoSrc ? (
+              <button type="button" className="block rounded-full" onClick={() => setViewing({ src: photoSrc, label: `${name}'s profile photo` })} aria-label="View profile photo">
+                {avatarEl}
+              </button>
             ) : (
               avatarEl
             )}
@@ -370,6 +394,8 @@ export function ProfileView() {
           <Stat label="Following" value={p.following_count} />
           <Stat label="Posts" value={p.post_count} />
         </div>
+
+        {isMe ? <ProfileViewsCard /> : null}
 
         {p.score !== null ? (
           <div className="mt-3 flex items-center justify-between rounded-3xl border border-border bg-surface px-4 py-3">

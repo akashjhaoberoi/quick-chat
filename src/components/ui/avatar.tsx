@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { blockSaveGestures } from "@/lib/media-protection";
 import { cn, initials, mediaUrl } from "@/lib/utils";
 
 const SIZES = {
@@ -40,8 +41,18 @@ export function Avatar({ mediaId, name, size = "md", online, ring, className }: 
     >
       {src ? (
         // Signed, short-lived URLs from /api/media are not suitable for next/image optimisation.
+        // Profile photos resist ordinary saving: no context menu, drag or long-press save.
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={src} alt="" className="h-full w-full object-cover" loading="lazy" decoding="async" onError={() => setFailed(true)} />
+        <img
+          src={src}
+          alt=""
+          draggable={false}
+          {...blockSaveGestures}
+          className="qc-protected h-full w-full select-none object-cover"
+          loading="lazy"
+          decoding="async"
+          onError={() => setFailed(true)}
+        />
       ) : (
         <span aria-hidden>{initials(name)}</span>
       )}

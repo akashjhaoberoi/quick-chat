@@ -27,6 +27,7 @@ export const NOTIFICATION_META: Record<NotificationType, Meta> = {
   post_comment: { icon: MessageCircle, color: "#7c5cff", noun: ["new comment", "new comments"] },
   follow: { icon: UserRoundPlus, color: "#7c5cff", noun: ["new follower", "new followers"] },
   moderation: { icon: ShieldAlert, color: "#f04438", noun: ["moderation notice", "moderation notices"] },
+  profile_view: { icon: Eye, color: "#f79009", noun: ["profile view", "profile views"] },
 };
 
 export function metaFor(type: string): Meta {

@@ -42,6 +42,7 @@ const GROUPS: { title: string; items: { type: NotificationType; label: string; d
       { type: "friend_request", label: "Friend requests" },
       { type: "friend_accepted", label: "Accepted requests" },
       { type: "follow", label: "New followers" },
+      { type: "profile_view", label: "Profile views", description: "Someone viewed your profile." },
       { type: "post_like", label: "Likes on your posts" },
       { type: "post_comment", label: "Comments on your posts" },
       { type: "system", label: "Product announcements" },

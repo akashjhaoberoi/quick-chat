@@ -33,6 +33,14 @@ export type UserSettings = {
   notification_prefs: Partial<Record<NotificationType, boolean>>;
   push_enabled: boolean;
   email_security_alerts: boolean;
+  avatar_visibility: "everyone" | "friends" | "nobody";
+  cover_visibility: "everyone" | "friends" | "nobody";
+  media_watermark: boolean;
+  default_media_mode: MediaMode;
+  /** Record and notify me about visits to my profile. */
+  profile_view_tracking: boolean;
+  /** How I appear when I view other profiles. */
+  profile_view_mode: "identifiable" | "anonymous";
   updated_at: string;
 };
 
@@ -59,6 +67,8 @@ export type ProfileSummary = {
   mutual_count: number;
   last_seen_at: string | null;
   can_view_details: boolean;
+  /** The owner's choice to watermark their profile and cover photos for viewers. */
+  media_watermark: boolean;
 };
 
 export type UserCard = {
@@ -123,7 +133,11 @@ export type Message = {
   pinned_at: string | null;
   pinned_by: string | null;
   created_at: string;
+  media_mode: MediaMode;
 };
+
+/** normal · view_once (one server-side view window) · disappearing (24h) · protected (no download, watermark). */
+export type MediaMode = "normal" | "view_once" | "disappearing" | "protected";
 
 export type MessageAttachment = { id: string; message_id: string; media_id: string; position: number };
 export type MessageReaction = { message_id: string; user_id: string; emoji: string; created_at: string };
@@ -264,7 +278,7 @@ export type CallHistoryItem = {
 export type NotificationType =
   | "message" | "friend_request" | "friend_accepted" | "incoming_call" | "missed_call" | "snap" | "snap_opened"
   | "snap_screenshot" | "story_reaction" | "story_reply" | "streak_reminder" | "mention" | "group_invite"
-  | "security" | "system" | "post_like" | "post_comment" | "follow" | "moderation";
+  | "security" | "system" | "post_like" | "post_comment" | "follow" | "moderation" | "profile_view";
 
 export type AppNotification = {
   id: string;
@@ -318,3 +332,18 @@ export type ReportReason =
   | "spam" | "harassment" | "hate" | "nudity" | "violence" | "self_harm" | "scam" | "impersonation" | "underage" | "other";
 
 export type ApiResult<T> = { ok: true; data: T } | { ok: false; error: { code: string; message: string; details?: unknown } };
+
+/** A visit to my profile; identity fields are null for anonymous viewers. */
+export type ProfileVisitor = {
+  view_id: string;
+  viewed_at: string;
+  anonymous: boolean;
+  id: string | null;
+  username: string | null;
+  display_name: string | null;
+  avatar_media_id: string | null;
+  is_verified: boolean | null;
+  last_seen_at: string | null;
+  is_friend: boolean | null;
+};
+export type ProfileViewStats = { unique_visitors: number; unique_visitors_7d: number; total_views: number };

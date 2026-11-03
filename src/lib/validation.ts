@@ -57,6 +57,7 @@ export const sendMessageSchema = z.object({
   replyTo: uuid.optional(),
   clientId: z.string().min(1).max(64).optional(),
   mediaIds: z.array(uuid).max(10).optional(),
+  mediaMode: z.enum(["normal", "view_once", "disappearing", "protected"]).optional(),
 });
 
 export const reportSchema = z.object({

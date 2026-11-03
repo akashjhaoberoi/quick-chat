@@ -20,6 +20,8 @@ through policies and **write** through RPCs (SECURITY DEFINER functions that val
 | `…000800_auth.sql` | `auth.users` before-insert trigger that blocks sign-ups (incl. Google) while `registration_open` is false |
 | `…001100_social_ui.sql` | `my_friend_requests()` — pending requests with profiles + mutual counts, block-aware |
 | `…001200_anon_read_policies.sql` | Splits the public `app_settings`/`announcements` read policies by role so anonymous visitors never evaluate `private.is_admin()` (which they may not execute) |
+| `20261103000100_media_protection.sql` | Profile/cover photo visibility (`user_settings.avatar_visibility`, `cover_visibility`), watermark and default media-mode settings; `messages.media_mode` (normal, view_once, disappearing, protected); `message_media_views`, `media_security_events`, `media_access_log`; updated `can_access_media`, `profile_summary`, `send_message`, `forward_message`; `open_message_media`, `close_message_media`, `report_media_screenshot`, `run_media_maintenance` |
+| `20261103000200_profile_views.sql` | `profile_views` (no direct access; RLS on, no policies), `user_settings.profile_view_tracking` / `profile_view_mode`, `profile_view` notification type, `app_settings.profile_view_window_hours` (default 24); `record_profile_view`, `my_profile_views` (anonymous viewers masked), `my_profile_view_stats` |
 
 ## Entity overview
 
@@ -76,10 +78,10 @@ notifications, push_subscriptions, user_sessions, app_settings, announcements, j
 | Calls | `start_call`, `join_call`, `decline_call`, `leave_call`, `my_calls` |
 | Discover | `create_post`, `delete_post`, `toggle_post_like`, `add_post_comment`, `delete_post_comment`, `toggle_saved_post`, `record_post_view`, `record_post_share`, `discover_feed`, `trending_hashtags` |
 | Search | `search_users`, `search_groups`, `search_posts`, `search_creators`, `search_public_stories` |
-| Media | `can_access_media` |
+| Media | `can_access_media`, `open_message_media`, `close_message_media`, `report_media_screenshot` |
 | Moderation | `create_report`, `submit_appeal` |
 | Admin (role-checked, audited) | `admin_stats`, `admin_search_users`, `admin_set_user_status`, `admin_warn_user`, `admin_remove_content`, `admin_resolve_report`, `admin_review_appeal`, `admin_set_role`, `admin_update_setting`, `admin_save_announcement`, `admin_delete_announcement`, `admin_log_access` |
-| Service role only | `run_maintenance`, `claim_push_notifications` |
+| Service role only | `run_maintenance`, `run_media_maintenance`, `claim_push_notifications` |
 
 ## Snap score rules (server-side, `private.award_score`)
 | Event | Points | Caps |

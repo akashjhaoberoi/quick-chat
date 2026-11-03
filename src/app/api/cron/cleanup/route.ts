@@ -9,7 +9,8 @@ export const maxDuration = 60;
 
 /**
  * Scheduled job (Vercel Cron → GET with `Authorization: Bearer $CRON_SECRET`).
- *  1. Runs DB maintenance (expiry enforcement) — also scheduled via pg_cron.
+ *  1. Runs DB maintenance (expiry enforcement) — also scheduled via pg_cron —
+ *     and media maintenance (spent view-once media, access-log retention).
  *  2. Deletes storage objects for media marked pending_delete.
  *  3. Sweeps any notifications whose push was not dispatched inline.
  */
@@ -19,6 +20,9 @@ export const GET = handler({ auth: "cron" }, async () => {
 
   const { data: maintenance, error } = await admin.rpc("run_maintenance");
   if (error) throw new ApiError(500, "maintenance_failed", error.message);
+  // Spent view-once media is marked pending_delete here, so step 2 removes it in this same run.
+  const { data: mediaMaintenance, error: mediaError } = await admin.rpc("run_media_maintenance");
+  if (mediaError) log("error", "media_maintenance_failed", { error: mediaError.message });
 
   const { data: pending } = await admin
     .from("media_assets")
@@ -49,5 +53,5 @@ export const GET = handler({ auth: "cron" }, async () => {
     finished_at: new Date().toISOString(),
   });
   log("info", "cron_cleanup", { deleted, failures: failures.length, pushSent: push.sent });
-  return { maintenance, deleted, failures, push };
+  return { maintenance, mediaMaintenance, deleted, failures, push };
 });

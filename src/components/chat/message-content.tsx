@@ -3,13 +3,17 @@
 import { memo, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronLeft, ChevronRight, Download, ExternalLink, FileText, Loader2, MapPin, Pause, Phone, Play, Radio, Video, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Download, ExternalLink, EyeOff, FileText, Loader2, Lock, MapPin, Pause, Phone, Play, Radio, Timer, Video, X } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
 import { Dialog } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { useConfirm } from "@/components/ui/confirm";
+import { ProtectedImage, PrivacyShield } from "@/components/media/protected-media";
+import { SecureViewer } from "@/components/media/secure-viewer";
 import { useRealtimeEvent } from "@/components/providers/realtime-provider";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
-import { errorMessage } from "@/lib/api/client";
+import { api, errorMessage } from "@/lib/api/client";
+import { usePageConcealed } from "@/lib/media-protection";
 import { cn, displayName, formatBytes, formatDuration, linkify, mediaUrl } from "@/lib/utils";
 import { toast } from "sonner";
 import type { UserCard } from "@/types/models";
@@ -145,8 +149,16 @@ function Progress({ value }: { value: number }) {
   );
 }
 
-function MediaGrid({ visuals, uploads }: { visuals: Visual[]; uploads?: number[] }) {
+/** Protected chat media: opened in the secure viewer, never downloadable. */
+type Protection = { messageId: string };
+
+function reportScreenshot(messageId: string) {
+  return api.post<{ reported: boolean }>(`/api/messages/${messageId}/screenshot`).then((r) => r.reported);
+}
+
+function MediaGrid({ visuals, uploads, protection }: { visuals: Visual[]; uploads?: number[]; protection?: Protection }) {
   const [open, setOpen] = useState<number | null>(null);
+  const concealed = usePageConcealed();
   const shown = visuals.slice(0, 4);
   const extra = visuals.length - shown.length;
   const single = visuals.length === 1;
@@ -176,10 +188,13 @@ function MediaGrid({ visuals, uploads }: { visuals: Visual[]; uploads?: number[]
                     </span>
                   </span>
                 </>
+              ) : protection ? (
+                <ProtectedImage src={v.src} loading="lazy" className="h-full w-full" imgClassName="h-full w-full object-cover" hidden={concealed} />
               ) : (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={v.src} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" />
               )}
+              {protection ? <PrivacyShield show={concealed} message="Hidden" /> : null}
               {uploads && uploads[idx] !== undefined && uploads[idx] < 1 ? <Progress value={uploads[idx]} /> : null}
               {idx === 3 && extra > 0 ? (
                 <span className="absolute inset-0 flex items-center justify-center bg-black/50 text-2xl font-bold text-white">+{extra}</span>
@@ -188,8 +203,127 @@ function MediaGrid({ visuals, uploads }: { visuals: Visual[]; uploads?: number[]
           );
         })}
       </div>
-      {open !== null ? <Lightbox items={visuals} index={open} onClose={() => setOpen(null)} /> : null}
+      {open !== null && protection ? (
+        <SecureViewer
+          items={visuals.map((v) => ({ src: v.src, kind: v.kind }))}
+          index={open}
+          label="Protected media"
+          notice="Protected · downloading is off"
+          onClose={() => setOpen(null)}
+          onScreenshot={() => reportScreenshot(protection.messageId)}
+        />
+      ) : open !== null ? (
+        <Lightbox items={visuals} index={open} onClose={() => setOpen(null)} />
+      ) : null}
     </>
+  );
+}
+
+
+// ---------------------------------------------------------------------------
+// View once: nothing is loaded until the recipient opens it; the server then
+// serves the media for one short window only.
+// ---------------------------------------------------------------------------
+function ViewOnceBubble({ message, mine }: { message: ChatMessage; mine: boolean }) {
+  const confirm = useConfirm();
+  const vo = message.view_once;
+  const kind = message.type === "video" ? "video" : "photo";
+  const [viewing, setViewing] = useState<{ expiresAt: string | null } | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [closedAt, setClosedAt] = useState<number | null>(null);
+  const now = useNow(5000);
+  const windowEnd = vo?.my_view_expires_at ? Date.parse(vo.my_view_expires_at) : null;
+  const spent = Boolean(vo?.expired) || closedAt !== null || (windowEnd !== null && windowEnd <= now);
+
+  const status = mine
+    ? vo?.expired
+      ? "Expired"
+      : vo?.opened_count
+        ? `Opened${vo.opened_count > 1 ? ` by ${vo.opened_count}` : ""}`
+        : "Not opened yet"
+    : spent
+      ? "Opened"
+      : windowEnd
+        ? "Tap to keep viewing"
+        : "Tap to view";
+  const disabled = busy || (mine ? Boolean(vo?.expired) : spent);
+
+  async function open() {
+    if (mine) {
+      setViewing({ expiresAt: null });
+      return;
+    }
+    if (!windowEnd) {
+      const ok = await confirm({
+        title: `View-once ${kind}`,
+        description: `You can open this ${kind} one time${kind === "photo" ? " for up to 60 seconds" : ""}. It closes if you leave Quick Chat, can't be saved or forwarded, and screenshots may be reported to the sender.`,
+        confirmLabel: "Open",
+      });
+      if (!ok) return;
+    }
+    setBusy(true);
+    try {
+      const r = await api.post<{ viewExpiresAt: string }>(`/api/messages/${message.id}/view-once`);
+      setViewing({ expiresAt: r.viewExpiresAt });
+    } catch (err) {
+      toast.error(errorMessage(err));
+      setClosedAt(Date.now());
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function close() {
+    setViewing(null);
+    if (mine) return;
+    setClosedAt(Date.now());
+    void api.delete(`/api/messages/${message.id}/view-once`).catch(() => undefined);
+  }
+
+  return (
+    <>
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={(e) => {
+          e.stopPropagation();
+          void open();
+        }}
+        className={cn("flex min-w-48 items-center gap-3 rounded-xl p-2 text-left disabled:cursor-default", mine ? "bg-white/10" : "bg-surface-2")}
+        aria-label={`View-once ${kind}: ${status}`}
+        data-testid="view-once"
+      >
+        <span className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-full", spent && !mine ? "bg-surface-3 text-muted" : mine ? "bg-white/20" : "bg-brand text-white")}>
+          {busy ? <Loader2 className="h-5 w-5 animate-spin" /> : spent && !mine ? <EyeOff className="h-5 w-5" /> : <span className="text-sm font-extrabold">1</span>}
+        </span>
+        <span className="min-w-0">
+          <span className="block text-sm font-semibold">View-once {kind}</span>
+          <span className={cn("block text-xs", mine ? "text-white/80" : "text-muted")}>{status}</span>
+        </span>
+      </button>
+      {viewing ? (
+        <SecureViewer
+          items={message.attachments.map((a) => ({ src: mediaUrl(a.media_id)!, kind: message.type === "video" ? "video" : "image" }))}
+          label={`View-once ${kind}`}
+          notice={mine ? `Your view-once ${kind}` : "View once"}
+          watermark={!mine}
+          expiresAt={viewing.expiresAt}
+          closeOnHide={!mine}
+          onClose={close}
+          onScreenshot={mine ? undefined : () => reportScreenshot(message.id)}
+        />
+      ) : null}
+    </>
+  );
+}
+
+function ModeBadge({ mode, mine }: { mode: ChatMessage["media_mode"]; mine: boolean }) {
+  if (mode !== "protected" && mode !== "disappearing") return null;
+  return (
+    <span className={cn("inline-flex items-center gap-1 text-[10px] font-bold uppercase", mine ? "text-white/80" : "text-muted")}>
+      {mode === "protected" ? <Lock className="h-3 w-3" /> : <Timer className="h-3 w-3" />}
+      {mode === "protected" ? "Protected" : "Disappears in 24h"}
+    </span>
   );
 }
 
@@ -424,15 +558,32 @@ export const MessageContent = memo(function MessageContent({
 }) {
   const meta = message.metadata ?? {};
   const atts = message.attachments;
+  const mode = message.media_mode ?? "normal";
+  if (mode === "view_once" && !files?.length && (message.type === "image" || message.type === "video")) {
+    return (
+      <div className="space-y-1.5">
+        <ViewOnceBubble message={message} mine={mine} />
+        {message.body ? <RichText text={message.body} mine={mine} /> : null}
+      </div>
+    );
+  }
+  const protection = mode === "protected" && !files?.length ? { messageId: message.id } : undefined;
   switch (message.type) {
     case "image":
     case "gif": {
       const visuals: Visual[] = files?.length
         ? files.map((f) => ({ src: f.previewUrl, kind: "image" }))
-        : atts.map((a) => ({ src: mediaUrl(a.media_id)!, kind: "image", width: a.width, height: a.height, downloadHref: mediaUrl(a.media_id, { download: true }) }));
+        : atts.map((a) => ({
+            src: mediaUrl(a.media_id)!,
+            kind: "image",
+            width: a.width,
+            height: a.height,
+            downloadHref: protection ? undefined : mediaUrl(a.media_id, { download: true }),
+          }));
       return (
         <div className="space-y-1.5">
-          <MediaGrid visuals={visuals} uploads={files?.map((f) => f.progress)} />
+          <MediaGrid visuals={visuals} uploads={files?.map((f) => f.progress)} protection={protection} />
+          <ModeBadge mode={mode} mine={mine} />
           {message.type === "gif" ? <span className="text-[10px] font-bold uppercase opacity-70">GIF</span> : null}
           {message.body ? <RichText text={message.body} mine={mine} /> : null}
         </div>
@@ -441,14 +592,21 @@ export const MessageContent = memo(function MessageContent({
     case "video": {
       const visuals: Visual[] = files?.length
         ? files.map((f) => ({ src: f.previewUrl, kind: "video" }))
-        : atts.map((a) => ({ src: mediaUrl(a.media_id)!, kind: "video", width: a.width, height: a.height, downloadHref: mediaUrl(a.media_id, { download: true }) }));
+        : atts.map((a) => ({
+            src: mediaUrl(a.media_id)!,
+            kind: "video",
+            width: a.width,
+            height: a.height,
+            downloadHref: protection ? undefined : mediaUrl(a.media_id, { download: true }),
+          }));
       return (
         <div className="space-y-1.5">
-          {visuals.length === 1 && !files?.length ? (
+          {visuals.length === 1 && !files?.length && !protection ? (
             <video src={visuals[0].src} controls playsInline preload="metadata" className="max-h-80 w-full rounded-2xl bg-black" onClick={(e) => e.stopPropagation()} />
           ) : (
-            <MediaGrid visuals={visuals} uploads={files?.map((f) => f.progress)} />
+            <MediaGrid visuals={visuals} uploads={files?.map((f) => f.progress)} protection={protection} />
           )}
+          <ModeBadge mode={mode} mine={mine} />
           {message.body ? <RichText text={message.body} mine={mine} /> : null}
         </div>
       );

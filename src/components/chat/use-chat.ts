@@ -10,7 +10,7 @@ import { uploadMedia, type UploadHandle } from "@/lib/upload";
 import { useRealtimeEvent } from "@/components/providers/realtime-provider";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { newClientId } from "@/lib/utils";
-import type { ConversationMember, Message, MessageType } from "@/types/models";
+import type { ConversationMember, MediaMode, Message, MessageType } from "@/types/models";
 import type { ChatMessage, ConversationDetail, DeliveryStatus, MessagePage, ReplyPreview } from "./types";
 
 export const PAGE_SIZE = 40;
@@ -208,6 +208,7 @@ export type OutboxItem = {
   replyTo: ReplyPreview | null;
   files: OutboxFile[];
   createdAt: string;
+  mediaMode?: MediaMode;
   status: "uploading" | "sending" | "failed";
   error?: string;
 };
@@ -218,6 +219,7 @@ export type Draft = {
   metadata?: Record<string, unknown>;
   replyTo?: ReplyPreview | null;
   files?: { file: File | Blob; name: string; kind: OutboxFile["kind"]; durationMs?: number }[];
+  mediaMode?: MediaMode;
 };
 
 export function useOutbox(conversationId: string) {
@@ -287,6 +289,7 @@ export function useOutbox(conversationId: string) {
           replyTo: current.replyTo?.id,
           clientId,
           mediaIds: mediaIds.length ? mediaIds : undefined,
+          mediaMode: current.mediaMode && current.mediaMode !== "normal" ? current.mediaMode : undefined,
         });
         upsertMessage(qc, conversationId, msg);
         remove(clientId);
@@ -314,6 +317,7 @@ export function useOutbox(conversationId: string) {
         replyTo: draft.replyTo ?? null,
         files: (draft.files ?? []).map((f) => ({ ...f, previewUrl: URL.createObjectURL(f.file), progress: 0 })),
         createdAt: new Date().toISOString(),
+        mediaMode: draft.mediaMode,
         status: draft.files?.length ? "uploading" : "sending",
       };
       commit((list) => [...list, item]);

@@ -5,16 +5,18 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "motion/react";
 import { toast } from "sonner";
 import {
-  Contact, FileText, Film, Image as ImageIcon, Loader2, MapPin, Mic, Paperclip, Pencil, Radio, Send, Smile, Sticker as StickerIcon,
-  Trash2, X,
+  Contact, FileText, Film, Image as ImageIcon, Loader2, Lock, MapPin, Mic, Paperclip, Pencil, Radio, Send, Smile, Sticker as StickerIcon,
+  Timer, Trash2, X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { FriendPicker } from "@/components/social/friend-picker";
+import { useMe } from "@/components/providers/session-provider";
 import { useAppConfig } from "@/hooks/use-app-config";
 import { api, errorMessage } from "@/lib/api/client";
 import { baseMime, MIME_KIND, validateUpload } from "@/lib/media-rules";
 import { cn, firstUrl, formatBytes, formatDuration } from "@/lib/utils";
+import type { MediaMode } from "@/types/models";
 import type { ChatMessage, LinkPreview, ReplyPreview } from "./types";
 import { patchMessage, previewText, upsertMessage, type Draft } from "./use-chat";
 import { EmojiPicker } from "./emoji-picker";
@@ -22,6 +24,41 @@ import { StickerPicker } from "./stickers";
 import { liveLocation } from "./live-location";
 
 type Staged = { id: string; file: File; url: string; kind: "image" | "video" | "audio" | "document"; gif: boolean };
+
+const MEDIA_MODES: { value: MediaMode; label: string; hint: string; icon: typeof Lock | null }[] = [
+  { value: "normal", label: "Normal", hint: "Can be saved and forwarded", icon: null },
+  { value: "view_once", label: "View once", hint: "Opens one time, then it's gone", icon: null },
+  { value: "protected", label: "Protected", hint: "No download or forwarding, watermarked", icon: Lock },
+  { value: "disappearing", label: "24h", hint: "Deleted for everyone after 24 hours", icon: Timer },
+];
+
+/** Photo/video protection choice shown while photos or videos are staged. */
+function MediaModePicker({ value, onChange }: { value: MediaMode; onChange: (m: MediaMode) => void }) {
+  const current = MEDIA_MODES.find((m) => m.value === value) ?? MEDIA_MODES[0];
+  return (
+    <div className="px-3 pt-2">
+      <div role="radiogroup" aria-label="Photo and video protection" className="flex flex-wrap gap-1.5">
+        {MEDIA_MODES.map(({ value: v, label, icon: Icon }) => (
+          <button
+            key={v}
+            type="button"
+            role="radio"
+            aria-checked={value === v}
+            onClick={() => onChange(v)}
+            className={cn(
+              "inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-semibold transition-colors",
+              value === v ? "border-brand bg-brand text-white" : "border-border text-ink-2 hover:bg-surface-2",
+            )}
+          >
+            {v === "view_once" ? <span className="text-[11px] font-extrabold">1</span> : Icon ? <Icon className="h-3 w-3" /> : null}
+            {label}
+          </button>
+        ))}
+      </div>
+      <p className="mt-1 text-[11px] text-muted">{current.hint}</p>
+    </div>
+  );
+}
 
 const DOC_ACCEPT = Object.keys(MIME_KIND).filter((m) => MIME_KIND[m] === "document").join(",");
 
@@ -235,6 +272,8 @@ export function Composer({
   const [dismissedUrl, setDismissedUrl] = useState<string | null>(null);
   const [debouncedUrl, setDebouncedUrl] = useState<string | null>(null);
   const [savingEdit, setSavingEdit] = useState(false);
+  const me = useMe();
+  const [mediaMode, setMediaMode] = useState<MediaMode>(me.settings.default_media_mode ?? "normal");
   const input = useRef<HTMLTextAreaElement>(null);
   const mediaInput = useRef<HTMLInputElement>(null);
   const gifInput = useRef<HTMLInputElement>(null);
@@ -325,12 +364,15 @@ export function Composer({
       const images = staged.filter((s) => s.kind === "image" && !s.gif);
       const others = staged.filter((s) => !(s.kind === "image" && !s.gif));
       const drafts: Draft[] = [];
-      for (let i = 0; i < images.length; i += 10) {
-        drafts.push({ type: "image", files: images.slice(i, i + 10).map((s) => ({ file: s.file, name: s.file.name, kind: "image" })) });
+      // Modes apply to photos and videos; view once is one file per message.
+      const mode = mediaMode === "normal" ? undefined : mediaMode;
+      const perMessage = mediaMode === "view_once" ? 1 : 10;
+      for (let i = 0; i < images.length; i += perMessage) {
+        drafts.push({ type: "image", mediaMode: mode, files: images.slice(i, i + perMessage).map((s) => ({ file: s.file, name: s.file.name, kind: "image" })) });
       }
       for (const s of others) {
         const type = s.gif ? "gif" : s.kind === "video" ? "video" : s.kind === "audio" ? "voice" : "document";
-        drafts.push({ type, files: [{ file: s.file, name: s.file.name, kind: s.kind }] });
+        drafts.push({ type, mediaMode: type === "video" ? mode : undefined, files: [{ file: s.file, name: s.file.name, kind: s.kind }] });
       }
       if (body) drafts[0] = { ...drafts[0], body };
       drafts[0] = { ...drafts[0], replyTo };
@@ -418,6 +460,7 @@ export function Composer({
         </div>
       ) : null}
 
+      {staged.some((s) => (s.kind === "image" && !s.gif) || s.kind === "video") ? <MediaModePicker value={mediaMode} onChange={setMediaMode} /> : null}
       {staged.length ? (
         <div className="flex gap-2 overflow-x-auto px-3 pt-2 no-scrollbar" aria-label="Attachments to send">
           {staged.map((s) => (

@@ -153,6 +153,23 @@ body {
   padding-bottom: env(safe-area-inset-bottom);
 }
 
+/* Protected media: no selection, drag or iOS long-press "Save to Photos". */
+.qc-protected,
+.qc-protected img {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-user-drag: none;
+  -webkit-touch-callout: none;
+}
+
+/* Printing (and "Save as PDF") leaves protected media out. */
+@media print {
+  .qc-protected,
+  [data-protected-media] {
+    visibility: hidden !important;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

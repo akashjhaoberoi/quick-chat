@@ -103,6 +103,32 @@ export function PrivacySettings() {
         </div>
       </SettingsSection>
 
+      <SettingsSection title="Profile views">
+        <div className="divide-y divide-border">
+          <Switch
+            checked={s.profile_view_tracking ?? true}
+            onChange={(v) => set("profile_view_tracking", v)}
+            label="Track who views my profile"
+            description="Records visits to your profile and notifies you. When off, visits aren't recorded."
+          />
+          <ChoiceGroup
+            label="When I view other profiles"
+            value={s.profile_view_mode ?? "identifiable"}
+            onChange={(v) => set("profile_view_mode", v)}
+            options={[
+              { value: "identifiable", label: "Show my name", description: "They see “@you viewed your profile”" },
+              { value: "anonymous", label: "Anonymous", description: "They only see that someone viewed it" },
+            ]}
+          />
+          <p className="py-3 text-xs text-muted">
+            Your online status in visitor lists follows “Who can see when I was last active” above.{" "}
+            <Link href="/profile-views" className="font-semibold text-brand hover:underline">
+              See who viewed your profile
+            </Link>
+          </p>
+        </div>
+      </SettingsSection>
+
       <SettingsSection title="Stories & location">
         <div className="divide-y divide-border">
           <ChoiceGroup

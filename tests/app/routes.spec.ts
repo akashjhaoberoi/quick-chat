@@ -6,7 +6,7 @@ const ROUTES = [
   "/home", "/chats", "/chats/starred", "/snaps", "/stories", "/camera", "/discover", "/discover/new",
   "/friends", "/search", "/notifications", "/calls", "/profile",
   "/settings", "/settings/account", "/settings/appearance", "/settings/blocked",
-  "/settings/notifications", "/settings/privacy", "/settings/security",
+  "/settings/media", "/settings/notifications", "/settings/privacy", "/settings/security",
 ];
 
 test.describe("signed-in screens", () => {

@@ -23,6 +23,8 @@ export const POST = handler(
         p_reply_to: body.replyTo ?? null,
         p_client_id: body.clientId ?? null,
         p_media_ids: body.mediaIds?.length ? body.mediaIds : null,
+        // Only sent when set, so plain messages also work before the media-protection migration.
+        ...(body.mediaMode && body.mediaMode !== "normal" ? { p_media_mode: body.mediaMode } : {}),
       }),
     ) as Message;
     after(() => dispatchRecentPush());
