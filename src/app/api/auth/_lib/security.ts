@@ -132,6 +132,9 @@ export async function isKnownDevice(userId: string, userAgent: string): Promise<
   return { known: rows.some((r) => r.user_agent === ua), firstLogin: false };
 }
 
+type LoginUser = { id: string; email: string | null; sessionId: string | null };
+type LoginRequest = { ip: string; userAgent: string };
+
 /**
  * Records a sign-in (idempotent per session), reactivates a deactivated
  * account and raises "new device" alerts. Shared by POST /api/auth/session
@@ -139,9 +142,25 @@ export async function isKnownDevice(userId: string, userAgent: string): Promise<
  */
 export async function recordLogin(
   supabase: SupabaseClient,
-  user: { id: string; email: string | null; sessionId: string | null },
-  request: { ip: string; userAgent: string },
+  user: LoginUser,
+  request: LoginRequest,
 ): Promise<{ status: string; onboarded: boolean; reactivated: boolean; newDevice: boolean }> {
+  const gate = await loginGate(supabase, user, request);
+  const newDevice = await recordLoginActivity(supabase, user, request);
+  return { ...gate, newDevice };
+}
+
+/**
+ * The part of a sign-in that decides where the user goes next: account
+ * status and onboarding (one query), plus reactivating a deactivated account.
+ * Kept separate so callers can answer immediately and run
+ * `recordLoginActivity` in `after()`.
+ */
+export async function loginGate(
+  supabase: SupabaseClient,
+  user: LoginUser,
+  request: LoginRequest,
+): Promise<{ status: string; onboarded: boolean; reactivated: boolean }> {
   const { data: profile } = await supabase.from("profiles").select("status, onboarded").eq("id", user.id).maybeSingle();
   let status = (profile?.status as string | undefined) ?? "active";
   const onboarded = Boolean(profile?.onboarded);
@@ -156,6 +175,11 @@ export async function recordLogin(
     }
   }
 
+  return { status, onboarded, reactivated };
+}
+
+/** Login activity row (once per auth session) and "new device" alerts. Returns whether the device was new. */
+export async function recordLoginActivity(supabase: SupabaseClient, user: LoginUser, request: LoginRequest): Promise<boolean> {
   // One 'login' row per auth session (the client may call this more than once, e.g. after MFA).
   if (user.sessionId && hasServiceRole()) {
     const { data: existing } = await getSupabaseAdmin()
@@ -165,7 +189,7 @@ export async function recordLogin(
       .eq("session_id", user.sessionId)
       .eq("event", "login")
       .limit(1);
-    if (existing && existing.length > 0) return { status, onboarded, reactivated, newDevice: false };
+    if (existing && existing.length > 0) return false;
   }
 
   const device = await isKnownDevice(user.id, request.userAgent);
@@ -177,7 +201,7 @@ export async function recordLogin(
     await securityNotification(user.id, "New sign-in to your account", `Signed in from ${label}. If this wasn't you, change your password now.`);
     await securityEmail(supabase, user.id, user.email, "login", request);
   }
-  return { status, onboarded, reactivated, newDevice };
+  return newDevice;
 }
 
 /** Only same-site relative paths are allowed as post-login destinations. */

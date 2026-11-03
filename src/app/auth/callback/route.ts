@@ -1,5 +1,5 @@
-import { NextResponse, type NextRequest } from "next/server";
-import { recordLogin, safeNextPath } from "@/app/api/auth/_lib/security";
+import { after, NextResponse, type NextRequest } from "next/server";
+import { loginGate, recordLoginActivity, safeNextPath } from "@/app/api/auth/_lib/security";
 import { clientIp } from "@/lib/api/handler";
 import { isSupabaseConfigured } from "@/lib/env";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -45,15 +45,17 @@ export async function GET(request: NextRequest) {
     return fail("We couldn't complete sign-in. Please try again.");
   }
 
-  const { data: claimsData } = await supabase.auth.getClaims();
-  const claims = claimsData?.claims as { session_id?: string } | undefined;
-  const result = await recordLogin(
-    supabase,
-    { id: data.session.user.id, email: data.session.user.email ?? null, sessionId: claims?.session_id ?? null },
-    { ip: clientIp(request), userAgent: request.headers.get("user-agent") ?? "" },
-  ).catch(() => ({ status: "active", onboarded: true, reactivated: false, newDevice: false }));
+  // Only what decides the next screen runs before the redirect (in parallel);
+  // login activity and new-device alerts are recorded after the response.
+  const sessionId = sessionIdOf(data.session.access_token);
+  const login = { id: data.session.user.id, email: data.session.user.email ?? null, sessionId };
+  const req = { ip: clientIp(request), userAgent: request.headers.get("user-agent") ?? "" };
+  const [result, { data: aal }] = await Promise.all([
+    loginGate(supabase, login, req).catch(() => ({ status: "active", onboarded: true, reactivated: false })),
+    supabase.auth.mfa.getAuthenticatorAssuranceLevel(),
+  ]);
+  after(() => recordLoginActivity(supabase, login, req).catch(() => undefined));
 
-  const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
   if (aal && aal.currentLevel === "aal1" && aal.nextLevel === "aal2") {
     const target = new URL("/login/mfa", url.origin);
     target.searchParams.set("next", next);
@@ -62,4 +64,14 @@ export async function GET(request: NextRequest) {
   if (result.status === "suspended" || result.status === "banned") return NextResponse.redirect(new URL("/suspended", url.origin));
   if (!result.onboarded) return NextResponse.redirect(new URL("/onboarding", url.origin));
   return NextResponse.redirect(new URL(next, url.origin));
+}
+
+/** The session id claim of a token Supabase just issued to us over TLS (no need to verify it again). */
+function sessionIdOf(accessToken: string): string | null {
+  try {
+    const payload = JSON.parse(Buffer.from(accessToken.split(".")[1], "base64url").toString("utf8")) as { session_id?: string };
+    return payload.session_id ?? null;
+  } catch {
+    return null;
+  }
 }
