@@ -22,15 +22,29 @@ export function SiteHeader() {
   );
 }
 
+/** Footer links, including every page Razorpay website verification looks for. */
+export const FOOTER_LINKS = [
+  { href: "/legal/about", label: "About Us" },
+  { href: "/pricing", label: "Pricing" },
+  { href: "/legal/contact", label: "Contact Us" },
+  { href: "/legal/terms", label: "Terms" },
+  { href: "/legal/privacy", label: "Privacy Policy" },
+  { href: "/legal/refunds", label: "Refunds & Cancellation" },
+  { href: "/legal/shipping", label: "Shipping & Delivery" },
+  { href: "/legal/community-guidelines", label: "Community Guidelines" },
+];
+
 export function SiteFooter() {
   return (
     <footer className="border-t border-border bg-surface">
       <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-4 py-8 text-sm text-muted sm:flex-row sm:px-6">
         <p>© Akarika Technologies. Quick Chat is original software by Akarika Technologies.</p>
-        <nav className="flex flex-wrap items-center gap-x-5 gap-y-2" aria-label="Legal">
-          <Link href="/legal/terms" className="hover:text-ink">Terms of Service</Link>
-          <Link href="/legal/privacy" className="hover:text-ink">Privacy Policy</Link>
-          <Link href="/legal/community-guidelines" className="hover:text-ink">Community Guidelines</Link>
+        <nav className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2" aria-label="Legal">
+          {FOOTER_LINKS.map((l) => (
+            <Link key={l.href} href={l.href} className="hover:text-ink">
+              {l.label}
+            </Link>
+          ))}
         </nav>
       </div>
     </footer>

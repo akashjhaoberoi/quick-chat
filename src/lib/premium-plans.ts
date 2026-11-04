@@ -37,7 +37,7 @@ export const PLANS: { id: PlanId; name: string; price: string; amountPaise: numb
 /** Only features that are actually implemented are listed. */
 export const PREMIUM_FEATURES: { key: Entitlement; title: string; description: string }[] = [
   { key: "premium_badge", title: "Premium badge", description: "An exclusive badge next to your name on your profile." },
-  { key: "profile_themes", title: "Profile themes", description: "Five extra colour themes for your profile header." },
+  { key: "profile_themes", title: "Premium themes", description: "Eight exclusive app themes in the Theme Store, plus five colour themes for your profile header." },
   { key: "profile_analytics", title: "Profile analytics", description: "Daily profile views and unique visitors for the last 30 days." },
   { key: "extended_uploads", title: "Bigger uploads", description: "Photos up to 30 MB, voice notes up to 40 MB, documents up to 50 MB, and 5 GB of uploads a day (free: 15 MB, 20 MB, 25 MB, 1 GB)." },
   { key: "premium_video_effects", title: "Premium call effects", description: "Extra video-call effects such as virtual backgrounds." },

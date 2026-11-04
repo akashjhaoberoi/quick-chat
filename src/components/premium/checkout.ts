@@ -77,7 +77,7 @@ export async function startCheckout(planId: PlanId): Promise<CheckoutResult> {
       description: start.planId === "lifetime" ? "Lifetime — one-time payment" : start.planId === "yearly" ? "Yearly subscription" : "Monthly subscription",
       ...(start.mode === "order" ? { order_id: start.orderId, amount: start.amount, currency: start.currency } : { subscription_id: start.subscriptionId }),
       prefill: { name: start.prefill.name, email: start.prefill.email },
-      theme: { color: "#FF9F43" },
+      theme: { color: getComputedStyle(document.documentElement).getPropertyValue("--accent").trim() || "#8B5CF6" },
       handler: async (res: RazorpaySuccess) => {
         try {
           const verified = await api.post<{ activated: boolean; status: string }>(

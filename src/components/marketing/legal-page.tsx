@@ -3,8 +3,12 @@ import Link from "next/link";
 import { SiteFooter, SiteHeader } from "./site-chrome";
 
 const DOCS = [
+  { href: "/legal/about", label: "About Us" },
+  { href: "/legal/contact", label: "Contact Us" },
   { href: "/legal/terms", label: "Terms of Service" },
   { href: "/legal/privacy", label: "Privacy Policy" },
+  { href: "/legal/refunds", label: "Refunds & Cancellation" },
+  { href: "/legal/shipping", label: "Shipping & Delivery" },
   { href: "/legal/community-guidelines", label: "Community Guidelines" },
 ];
 

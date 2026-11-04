@@ -74,7 +74,7 @@ export function CallsView() {
             </span>
             <div className="min-w-0 flex-1">
               <p className="truncate font-bold">{c.title}</p>
-              <p className="text-xs text-white/85">{c.status === "active" ? `${c.kind === "video" ? "Video" : "Voice"} call in progress` : "Ringing…"}</p>
+              <p className="text-xs opacity-85">{c.status === "active" ? `${c.kind === "video" ? "Video" : "Voice"} call in progress` : "Ringing…"}</p>
             </div>
             <Link
               href={`/calls/${c.call_id}${c.my_status === "joined" ? "" : "?accept=1"}`}

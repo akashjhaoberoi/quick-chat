@@ -1,11 +1,15 @@
 import Link from "next/link";
-import { Camera, MessageCircle, ShieldCheck, Sparkles } from "lucide-react";
+import { Camera, Compass, Crown, MessageCircle, ShieldCheck, Sparkles, Wand2 } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
+import { FOOTER_LINKS } from "@/components/marketing/site-chrome";
 import { InstallButton } from "@/components/pwa/install-button";
 
 const POINTS = [
   { icon: MessageCircle, title: "Real-time chat", text: "Typing indicators, reactions, voice notes and groups." },
-  { icon: Camera, title: "Snaps & Stories", text: "Share moments that disappear on your terms." },
+  { icon: Camera, title: "Snaps & Stories", text: "Share moments with friends that disappear on your terms." },
+  { icon: Wand2, title: "Effects", text: "Filters, stickers and drawing on Snaps, plus live call effects." },
+  { icon: Compass, title: "Discover", text: "Browse posts by category from creators you follow and beyond." },
+  { icon: Crown, title: "Premium", text: "Exclusive app themes, a profile badge and bigger uploads." },
   { icon: ShieldCheck, title: "You're in control", text: "Granular privacy, blocking and two-factor sign-in." },
 ];
 
@@ -13,7 +17,7 @@ const POINTS = [
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-dvh bg-bg">
-      <aside className="brand-gradient relative hidden w-[44%] max-w-xl flex-col justify-between overflow-hidden p-10 text-white lg:flex">
+      <aside className="brand-gradient relative hidden w-[44%] max-w-xl flex-col justify-between overflow-hidden p-10 text-brand-ink lg:flex">
         <div aria-hidden className="pointer-events-none absolute -right-24 -top-24 h-80 w-80 rounded-full bg-white/15 blur-3xl" />
         <div aria-hidden className="pointer-events-none absolute -bottom-32 -left-16 h-96 w-96 rounded-full bg-black/10 blur-3xl" />
         <Link href="/" className="relative inline-flex w-fit rounded-2xl bg-white/95 px-3 py-2 text-ink shadow-[var(--shadow-soft)]">
@@ -30,7 +34,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
             <br />
             Share.
           </h2>
-          <ul className="mt-10 space-y-5">
+          <ul className="mt-8 space-y-4">
             {POINTS.map(({ icon: Icon, title, text }) => (
               <li key={title} className="flex items-start gap-4">
                 <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/15 backdrop-blur">
@@ -38,13 +42,13 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
                 </span>
                 <span>
                   <span className="block font-bold">{title}</span>
-                  <span className="block text-sm text-white/80">{text}</span>
+                  <span className="block text-sm opacity-80">{text}</span>
                 </span>
               </li>
             ))}
           </ul>
         </div>
-        <p className="relative text-xs text-white/70">© Akarika Technologies</p>
+        <p className="relative text-xs opacity-70">© Akarika Technologies</p>
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
@@ -61,9 +65,11 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           <div className="w-full max-w-md">{children}</div>
         </main>
         <footer className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 px-5 pb-6 text-xs text-muted">
-          <Link href="/legal/terms" className="hover:text-ink">Terms</Link>
-          <Link href="/legal/privacy" className="hover:text-ink">Privacy</Link>
-          <Link href="/legal/community-guidelines" className="hover:text-ink">Community Guidelines</Link>
+          {FOOTER_LINKS.map((l) => (
+            <Link key={l.href} href={l.href} className="hover:text-ink">
+              {l.label}
+            </Link>
+          ))}
           <span className="lg:hidden">© Akarika Technologies</span>
         </footer>
       </div>

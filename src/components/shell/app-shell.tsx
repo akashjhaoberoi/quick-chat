@@ -3,12 +3,14 @@
 import { Suspense, useEffect, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Bell, LogOut, Megaphone, MessageCircle, Phone, Search, Shield, WifiOff, type LucideIcon } from "lucide-react";
+import { Bell, LogOut, Megaphone, MessageCircle, Monitor, Moon, Palette, Phone, Search, Shield, Sun, WifiOff, type LucideIcon } from "lucide-react";
 import { LogoMark, Wordmark } from "@/components/brand/logo";
 import { Avatar } from "@/components/ui/avatar";
 import { Menu } from "@/components/ui/controls";
 import { Spinner } from "@/components/ui/feedback";
 import { SessionProvider, useSession } from "@/components/providers/session-provider";
+import { useTheme, type ThemePreference } from "@/components/providers/theme-provider";
+import { AppThemeSync, useThemeActions } from "@/components/settings/theme-gallery";
 import { RealtimeProvider } from "@/components/providers/realtime-provider";
 import { IncomingCallOverlay } from "@/components/calls/incoming-call-overlay";
 import { PushPrompt } from "@/components/pwa/push-prompt";
@@ -120,6 +122,55 @@ function HeaderIconLink({ href, label, icon: Icon, badge = 0, pathname }: {
   );
 }
 
+const MODE_LABEL: Record<ThemePreference, string> = { light: "Light", dark: "Dark", system: "System default" };
+const MODE_ICON: Record<ThemePreference, LucideIcon> = { light: Sun, dark: Moon, system: Monitor };
+const NEXT_MODE: Record<ThemePreference, ThemePreference> = { system: "light", light: "dark", dark: "system" };
+
+/** Theme menu items shared by the desktop theme button and the mobile account menu. */
+function useThemeMenuItems(compact: boolean) {
+  const router = useRouter();
+  const { theme, appTheme } = useTheme();
+  const { setMode } = useThemeActions();
+  const custom = appTheme !== "classic";
+  const store = { label: "Theme Store", icon: <Palette />, onSelect: () => router.push("/settings/appearance") };
+  if (compact) {
+    // One row that cycles Light → Dark → System, plus the gallery.
+    const Icon = MODE_ICON[theme];
+    return [
+      { label: custom ? "Theme: custom (tap for Light)" : `Theme: ${MODE_LABEL[theme]}`, icon: <Icon />, onSelect: () => setMode(custom ? "light" : NEXT_MODE[theme]) },
+      store,
+    ];
+  }
+  return [
+    ...(["light", "dark", "system"] as const).map((m) => {
+      const Icon = MODE_ICON[m];
+      const active = !custom && theme === m;
+      return { label: active ? `${MODE_LABEL[m]} ✓` : MODE_LABEL[m], icon: <Icon />, onSelect: () => setMode(m) };
+    }),
+    store,
+  ];
+}
+
+/** Desktop header: Light / Dark / System and the Theme Store. */
+function ThemeMenu() {
+  const { theme, appTheme } = useTheme();
+  const items = useThemeMenuItems(false);
+  const Icon = appTheme !== "classic" ? Palette : MODE_ICON[theme];
+  return (
+    <div className="hidden md:flex">
+      <Menu
+        label="Theme"
+        trigger={
+          <span className={HEADER_ICON} title="Theme">
+            <Icon className="h-[22px] w-[22px]" aria-hidden />
+          </span>
+        }
+        items={items}
+      />
+    </div>
+  );
+}
+
 /**
  * App header on every screen size: [Chats, Calls] · QUICK CHAT · [Search, Notifications, Avatar].
  * A 3-column grid with equal 1fr side tracks keeps the wordmark centred no
@@ -130,6 +181,7 @@ function AppHeader() {
   const router = useRouter();
   const { me, signOut } = useSession();
   const badges = useNavBadges(me!.user.id);
+  const themeItems = useThemeMenuItems(true);
   if (IMMERSIVE_PREFIXES.some((p) => pathname.startsWith(p))) return null;
   // Conversations draw their own header on mobile; full-height desktop views (chats, discover) skip it on md+.
   const hideMobile = NO_BOTTOM_NAV_PATTERNS.some((r) => r.test(pathname));
@@ -158,6 +210,7 @@ function AppHeader() {
       <div className="flex items-center justify-self-end">
         <HeaderIconLink href="/search" label="Search" icon={Search} pathname={pathname} />
         <HeaderIconLink href="/notifications" label="Notifications" icon={Bell} badge={badges.notifications} pathname={pathname} />
+        <ThemeMenu />
         {/* Mobile: the avatar opens the account menu, which also reaches Home, Discover, Snaps, Friends and Settings. */}
         <div className="flex md:hidden">
           <Menu
@@ -176,6 +229,7 @@ function AppHeader() {
                 const count = item.badge ? badges[item.badge] : 0;
                 return { label: count ? `${item.label} (${count})` : item.label, icon: <Icon />, onSelect: () => router.push(item.href) };
               }),
+              ...themeItems,
               ...(me?.adminRole ? [{ label: "Admin", icon: <Shield />, onSelect: () => router.push("/admin") }] : []),
               { label: "Sign out", icon: <LogOut />, onSelect: () => void signOut(), danger: true },
             ]}
@@ -195,7 +249,7 @@ function AppHeader() {
   );
 }
 
-/** Mobile bottom bar: Chats, Camera, Stories, Calls, Profile (each target ≥48px). */
+/** Mobile bottom bar: Calls, Chats, Camera, Stories, Discover (each target ≥48px). */
 function BottomNav() {
   const pathname = usePathname();
   const { me } = useSession();
@@ -290,6 +344,7 @@ function ShellFrame({ children }: { children: ReactNode }) {
       <Suspense fallback={null}>
         <BottomNav />
       </Suspense>
+      <AppThemeSync />
       <IncomingCallOverlay />
       <NotificationToaster />
       <PushPrompt />

@@ -4,7 +4,7 @@ import { refreshSession } from "@/lib/supabase/proxy";
 
 const PUBLIC_PREFIXES = [
   "/login", "/register", "/forgot-password", "/reset-password", "/verify-email", "/auth/",
-  "/offline", "/legal", "/setup", "/suspended",
+  "/offline", "/legal", "/pricing", "/setup", "/suspended",
 ];
 const GUEST_ONLY = ["/login", "/register", "/forgot-password"];
 
@@ -16,7 +16,7 @@ export async function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
 
   if (!isSupabaseConfigured) {
-    if (pathname.startsWith("/api/") || pathname === "/setup" || pathname === "/" || pathname === "/offline" || pathname.startsWith("/legal")) {
+    if (pathname.startsWith("/api/") || pathname === "/setup" || pathname === "/" || pathname === "/offline" || pathname.startsWith("/legal") || pathname === "/pricing") {
       return NextResponse.next();
     }
     return NextResponse.redirect(new URL("/setup", request.url));

@@ -103,8 +103,8 @@ export default function LandingPage() {
         <section className="mx-auto max-w-6xl px-4 pb-20 sm:px-6">
           <div className="brand-gradient relative overflow-hidden rounded-[2rem] px-6 py-12 text-center text-white sm:px-12">
             <h2 className="font-display text-3xl font-extrabold tracking-tight sm:text-4xl">Your Moments. Your Conversations.</h2>
-            <p className="mx-auto mt-3 max-w-xl text-white/85">Join Quick Chat today — free, fast, and installable on your phone&apos;s home screen.</p>
-            <Link href="/register" className="mt-7 inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-white px-6 font-bold text-[#7c5cff] hover:bg-white/90">
+            <p className="mx-auto mt-3 max-w-xl opacity-85">Join Quick Chat today — free, fast, and installable on your phone&apos;s home screen.</p>
+            <Link href="/register" className="mt-7 inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-white px-6 font-bold text-ink hover:bg-white/90">
               Get started <ArrowRight className="h-4 w-4" />
             </Link>
           </div>

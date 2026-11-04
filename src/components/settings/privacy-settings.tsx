@@ -18,6 +18,7 @@ import { cn, displayName, relativeTime } from "@/lib/utils";
 import type { Profile, UserSettings } from "@/types/models";
 import { SettingsPageHeader } from "./settings-shell";
 import { ChoiceGroup, SettingsSection, useUpdateSettings } from "./settings-ui";
+import { ThemeGallery, useThemeActions } from "./theme-gallery";
 
 export function PrivacySettings() {
   const me = useMe();
@@ -168,25 +169,22 @@ const THEMES: { value: ThemePreference; label: string; icon: typeof Sun; descrip
 ];
 
 export function AppearanceSettings() {
-  const { theme, setTheme } = useTheme();
-  const update = useUpdateSettings();
+  const { theme, appTheme } = useTheme();
+  const { setMode } = useThemeActions();
   return (
     <div className="space-y-4 px-4 pb-10 md:px-0">
       <SettingsPageHeader title="Appearance" description="Your choice is saved to your account and applied when you sign in on other devices." />
-      <SettingsSection title="Theme">
-        <div role="radiogroup" aria-label="Theme" className="grid gap-3 sm:grid-cols-3">
+      <SettingsSection title="Mode" description={appTheme !== "classic" ? "Choosing a mode switches back to the Classic theme." : undefined}>
+        <div role="radiogroup" aria-label="Theme mode" className="grid gap-3 sm:grid-cols-3">
           {THEMES.map(({ value, label, icon: Icon, description }) => {
-            const active = theme === value;
+            const active = appTheme === "classic" && theme === value;
             return (
               <button
                 key={value}
                 type="button"
                 role="radio"
                 aria-checked={active}
-                onClick={() => {
-                  setTheme(value);
-                  update.mutate({ theme: value });
-                }}
+                onClick={() => setMode(value)}
                 className={cn(
                   "overflow-hidden rounded-2xl border text-left transition-colors",
                   active ? "border-brand ring-4 ring-[var(--ring)]" : "border-border hover:border-brand/50",
@@ -196,11 +194,11 @@ export function AppearanceSettings() {
                   aria-hidden
                   className={cn(
                     "flex h-20 items-end gap-1.5 p-3",
-                    value === "dark" ? "bg-[#0b0a12]" : value === "light" ? "bg-[#f6f5fb]" : "bg-gradient-to-r from-[#f6f5fb] from-50% to-[#0b0a12] to-50%",
+                    value === "dark" ? "bg-[#101010]" : value === "light" ? "bg-[#f7f7f8]" : "bg-gradient-to-r from-[#f7f7f8] from-50% to-[#101010] to-50%",
                   )}
                 >
-                  <span className="h-6 w-16 rounded-xl rounded-bl-sm bg-[#7c5cff]" />
-                  <span className={cn("h-4 w-10 rounded-xl", value === "dark" ? "bg-[#242134]" : "bg-white shadow")} />
+                  <span className="h-6 w-16 rounded-xl rounded-bl-sm bg-[#fffc00]" />
+                  <span className={cn("h-4 w-10 rounded-xl", value === "dark" ? "bg-[#222222]" : "bg-white shadow")} />
                 </span>
                 <span className="flex items-center gap-2 px-3 py-2.5">
                   <Icon className="h-4 w-4 text-brand" />
@@ -213,6 +211,9 @@ export function AppearanceSettings() {
             );
           })}
         </div>
+      </SettingsSection>
+      <SettingsSection title="Theme Store" description="Preview any theme before applying it. Classic Light and Midnight Dark are free.">
+        <ThemeGallery />
       </SettingsSection>
     </div>
   );

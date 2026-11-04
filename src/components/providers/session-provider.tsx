@@ -82,6 +82,12 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       refresh: () => query.refetch(),
       signOut: async () => {
         queryClient.clear();
+        // Premium themes belong to the account; signed-out pages use the classic theme.
+        try {
+          localStorage.removeItem("qc-app-theme");
+        } catch {
+          // storage unavailable
+        }
         await signOutDevice();
       },
     }),

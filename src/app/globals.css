@@ -3,74 +3,158 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 /* ---------------------------------------------------------------------------
-   Quick Chat design tokens — light orange
-   Palette: primary #FF9F43, secondary #FFB76B, accent #F47B20,
-   soft #FFE4C7, background #FFF8F0, ink #242424.
+   Quick Chat design tokens
 
-   Contrast rules (WCAG 2.x, checked):
-   - Orange fills (--brand, --accent, .brand-gradient) carry DARK text
-     (--brand-ink #242424: 7.6:1 on #FF9F43, 5.7:1 on #F47B20). White on these
-     oranges fails (2.0–2.7:1), so it is never used for text on them.
-   - Orange TEXT uses --brand-text / --accent-text, darker oranges that pass
-     4.5:1 on every light surface (#A84C06: 5.7:1 on white, 4.6:1 on
-     --brand-soft). `text-brand` / `text-accent` resolve to these through the
-     --text-color-* theme keys below; bg-/border-/ring- utilities keep the
-     bright brand orange.
-   - Outgoing chat bubbles keep white text, so --bubble-me is a deeper orange
-     (white ≥4.6:1).
+   Classic Light (:root) and Midnight Dark (.dark) are the free themes and
+   follow the Light / Dark / System preference. Premium themes override every
+   token under :root[data-theme="<id>"] (see src/lib/app-themes.ts); the
+   server decides whether a premium theme may be applied.
+
+   Contrast rules (WCAG 2.x, checked for every theme):
+   - Brand fills (--brand, --accent, .brand-gradient) carry --brand-ink text.
+   - Brand-coloured TEXT uses --brand-text / --accent-text, which pass 4.5:1
+     on the theme's surfaces. `text-brand` / `text-accent` resolve to these
+     through the --text-color-* keys below; bg-/border-/ring- utilities keep
+     the bright brand colour.
+   - Outgoing chat bubbles (--bubble-me) carry white text (at least 4.5:1).
 --------------------------------------------------------------------------- */
 :root {
-  --bg: #fff8f0;
+  --bg: #ffffff;
   --surface: #ffffff;
-  --surface-2: #fff1e3;
-  --surface-3: #fce6cf;
-  --border: #f2dcc6;
-  --ink: #242424;
-  --ink-2: #4a4038;
-  --muted: #6b5f55;
-  --brand: #ff9f43;
-  --brand-ink: #242424;
-  --brand-soft: #ffe4c7;
-  --brand-text: #a84c06;
-  --accent: #f47b20;
-  --accent-soft: #ffe9d6;
-  --accent-text: #a8410a;
+  --surface-2: #f7f7f8;
+  --surface-3: #efeff1;
+  --border: #e8e8e8;
+  --ink: #171717;
+  --ink-2: #3a3a3a;
+  --muted: #6e6e6e;
+  --brand: #fffc00;
+  --brand-ink: #171717;
+  --brand-soft: #fffdcc;
+  --brand-text: #5b4a00;
+  --accent: #8b5cf6;
+  --accent-soft: #f3eefe;
+  --accent-text: #6d28d9;
   --success: #12b76a;
   --warning: #e9a30a;
   --danger: #d92d20;
   --danger-soft: #fdecea;
-  --ring: #ff9f4366;
-  --bubble-me: linear-gradient(135deg, #c4520e 0%, #b04a0c 100%);
-  --bubble-them: #ffffff;
-  --shadow-color: 28 55% 28%;
+  --ring: #8b5cf666;
+  --bubble-me: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+  --bubble-them: #f7f7f8;
+  --grad-1: #fffd66;
+  --grad-2: #fffc00;
+  --grad-3: #ffe600;
+  --shadow-color: 0 0% 20%;
   color-scheme: light;
 }
 
 .dark {
-  --bg: #16110c;
-  --surface: #1e1812;
-  --surface-2: #282019;
-  --surface-3: #332920;
-  --border: #3a2e24;
-  --ink: #fbf3ea;
-  --ink-2: #e3d4c4;
-  --muted: #b3a08d;
-  --brand: #ff9f43;
-  --brand-ink: #242424;
-  --brand-soft: #3a2614;
-  --brand-text: #ffb76b;
-  --accent: #ff8a3d;
-  --accent-soft: #3d2210;
-  --accent-text: #ffa866;
+  --bg: #101010;
+  --surface: #222222;
+  --surface-2: #181818;
+  --surface-3: #2c2c2c;
+  --border: #333333;
+  --ink: #ffffff;
+  --ink-2: #e0e0e0;
+  --muted: #b8b8b8;
+  --brand: #fffc00;
+  --brand-ink: #171717;
+  --brand-soft: #2e2d00;
+  --brand-text: #fffc00;
+  --accent: #a78bfa;
+  --accent-soft: #2a2140;
+  --accent-text: #c4b5fd;
   --success: #32d583;
   --warning: #fdc23a;
   --danger: #f2555a;
   --danger-soft: #3b1517;
-  --ring: #ff9f4380;
-  --bubble-me: linear-gradient(135deg, #c4520e 0%, #b04a0c 100%);
-  --bubble-them: #282019;
-  --shadow-color: 25 45% 2%;
+  --ring: #a78bfa80;
+  --bubble-me: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+  --bubble-them: #2c2c2c;
+  --shadow-color: 0 0% 2%;
   color-scheme: dark;
+}
+
+/* ---- Premium themes (fixed colour scheme each) ---------------------------- */
+:root[data-theme="premium-gold"] {
+  --bg: #0f0d08; --surface: #1b1710; --surface-2: #15120c; --surface-3: #262016; --border: #3a301e;
+  --ink: #fbf5e6; --ink-2: #e8dcc0; --muted: #b9a98a;
+  --brand: #d4af37; --brand-ink: #1a1408; --brand-soft: #3a2f12; --brand-text: #e8c766;
+  --accent: #f5d06f; --accent-soft: #3b3015; --accent-text: #f5d06f;
+  --ring: #d4af3780; --bubble-me: linear-gradient(135deg, #8a6d1a 0%, #7a5f12 100%); --bubble-them: #262016;
+  --grad-1: #f5d06f; --grad-2: #d4af37; --grad-3: #b8912a;
+  --success: #32d583; --warning: #fdc23a; --danger: #f2555a; --danger-soft: #3b1517; --shadow-color: 40 40% 2%;
+  color-scheme: dark;
+}
+:root[data-theme="royal-purple"] {
+  --bg: #120c1f; --surface: #1c1430; --surface-2: #170f28; --surface-3: #261b3f; --border: #33264f;
+  --ink: #f5f0ff; --ink-2: #ddd2f5; --muted: #a99cc6;
+  --brand: #a78bfa; --brand-ink: #120c1f; --brand-soft: #2e2150; --brand-text: #c4b5fd;
+  --accent: #f0abfc; --accent-soft: #3a1d45; --accent-text: #f0abfc;
+  --ring: #a78bfa80; --bubble-me: linear-gradient(135deg, #6d28d9 0%, #5b21b6 100%); --bubble-them: #261b3f;
+  --grad-1: #c4b5fd; --grad-2: #a78bfa; --grad-3: #f0abfc;
+  --success: #32d583; --warning: #fdc23a; --danger: #f2555a; --danger-soft: #3b1517; --shadow-color: 265 50% 3%;
+  color-scheme: dark;
+}
+:root[data-theme="ocean-blue"] {
+  --bg: #f4f9fd; --surface: #ffffff; --surface-2: #e8f3fb; --surface-3: #d6eaf7; --border: #cfe3f2;
+  --ink: #0b2540; --ink-2: #23415f; --muted: #4f6b85;
+  --brand: #38bdf8; --brand-ink: #0b2540; --brand-soft: #ddf2fd; --brand-text: #0369a1;
+  --accent: #0ea5e9; --accent-soft: #e0f2fe; --accent-text: #075985;
+  --ring: #38bdf866; --bubble-me: linear-gradient(135deg, #0369a1 0%, #075985 100%); --bubble-them: #ffffff;
+  --grad-1: #7dd3fc; --grad-2: #38bdf8; --grad-3: #0ea5e9;
+  --success: #12b76a; --warning: #e9a30a; --danger: #d92d20; --danger-soft: #fdecea; --shadow-color: 205 60% 25%;
+  color-scheme: light;
+}
+:root[data-theme="rose-burgundy"] {
+  --bg: #1a0b10; --surface: #261218; --surface-2: #200e14; --surface-3: #331820; --border: #4a2230;
+  --ink: #fff0f3; --ink-2: #f2d4dc; --muted: #c79aa7;
+  --brand: #fb7185; --brand-ink: #1a0b10; --brand-soft: #3d1520; --brand-text: #fda4af;
+  --accent: #fda4af; --accent-soft: #3d1520; --accent-text: #fda4af;
+  --ring: #fb718580; --bubble-me: linear-gradient(135deg, #9f1239 0%, #881337 100%); --bubble-them: #331820;
+  --grad-1: #fda4af; --grad-2: #fb7185; --grad-3: #e11d48;
+  --success: #32d583; --warning: #fdc23a; --danger: #f2555a; --danger-soft: #3b1517; --shadow-color: 345 50% 3%;
+  color-scheme: dark;
+}
+:root[data-theme="sunset-orange"] {
+  --bg: #fff8f0; --surface: #ffffff; --surface-2: #fff1e3; --surface-3: #fce6cf; --border: #f2dcc6;
+  --ink: #242424; --ink-2: #4a4038; --muted: #6b5f55;
+  --brand: #ff9f43; --brand-ink: #242424; --brand-soft: #ffe4c7; --brand-text: #a84c06;
+  --accent: #f47b20; --accent-soft: #ffe9d6; --accent-text: #a8410a;
+  --ring: #ff9f4366; --bubble-me: linear-gradient(135deg, #c4520e 0%, #b04a0c 100%); --bubble-them: #ffffff;
+  --grad-1: #ffb76b; --grad-2: #ff9f43; --grad-3: #f47b20;
+  --success: #12b76a; --warning: #e9a30a; --danger: #d92d20; --danger-soft: #fdecea; --shadow-color: 28 55% 28%;
+  color-scheme: light;
+}
+:root[data-theme="emerald-green"] {
+  --bg: #f3fbf6; --surface: #ffffff; --surface-2: #e6f6ec; --surface-3: #d2eedd; --border: #cde8d7;
+  --ink: #0b2618; --ink-2: #1f4030; --muted: #4d6b5a;
+  --brand: #34d399; --brand-ink: #062016; --brand-soft: #d9f7e8; --brand-text: #047857;
+  --accent: #10b981; --accent-soft: #d1fae5; --accent-text: #065f46;
+  --ring: #34d39966; --bubble-me: linear-gradient(135deg, #047857 0%, #065f46 100%); --bubble-them: #ffffff;
+  --grad-1: #6ee7b7; --grad-2: #34d399; --grad-3: #10b981;
+  --success: #12b76a; --warning: #e9a30a; --danger: #d92d20; --danger-soft: #fdecea; --shadow-color: 150 45% 20%;
+  color-scheme: light;
+}
+:root[data-theme="neon-cyber"] {
+  --bg: #07070f; --surface: #10101f; --surface-2: #0c0c18; --surface-3: #181830; --border: #26264a;
+  --ink: #eef7ff; --ink-2: #c9d8f0; --muted: #8f9bbf;
+  --brand: #22d3ee; --brand-ink: #04121a; --brand-soft: #062b33; --brand-text: #67e8f9;
+  --accent: #e879f9; --accent-soft: #2e0a35; --accent-text: #f0abfc;
+  --ring: #22d3ee80; --bubble-me: linear-gradient(135deg, #7e22ce 0%, #6b21a8 100%); --bubble-them: #181830;
+  --grad-1: #67e8f9; --grad-2: #22d3ee; --grad-3: #e879f9;
+  --success: #32d583; --warning: #fdc23a; --danger: #f2555a; --danger-soft: #3b1517; --shadow-color: 240 60% 2%;
+  color-scheme: dark;
+}
+:root[data-theme="minimal-white"] {
+  --bg: #ffffff; --surface: #ffffff; --surface-2: #fafafa; --surface-3: #f2f2f2; --border: #ebebeb;
+  --ink: #111111; --ink-2: #333333; --muted: #6b6b6b;
+  --brand: #111111; --brand-ink: #ffffff; --brand-soft: #f2f2f2; --brand-text: #111111;
+  --accent: #444444; --accent-soft: #f2f2f2; --accent-text: #333333;
+  --ring: #11111140; --bubble-me: linear-gradient(135deg, #111111 0%, #2a2a2a 100%); --bubble-them: #f2f2f2;
+  --grad-1: #3a3a3a; --grad-2: #1f1f1f; --grad-3: #111111;
+  --success: #12b76a; --warning: #e9a30a; --danger: #d92d20; --danger-soft: #fdecea; --shadow-color: 0 0% 20%;
+  color-scheme: light;
 }
 
 @theme inline {
@@ -138,15 +222,15 @@ body {
   outline-offset: 2px;
 }
 
-/* Subtle secondary → primary → accent sweep. Text on it is dark ink; this rule
+/* Subtle secondary → primary → accent sweep. Text on it is --brand-ink; this rule
    is unlayered on purpose so it wins over `text-white` utilities still used on
-   gradient surfaces elsewhere (white on light orange fails WCAG). */
+   gradient surfaces elsewhere (white on bright brand fills fails WCAG). */
 .brand-gradient {
-  background-image: linear-gradient(135deg, #ffb76b 0%, #ff9f43 55%, #f47b20 100%);
+  background-image: linear-gradient(135deg, var(--grad-1) 0%, var(--grad-2) 55%, var(--grad-3) 100%);
   color: var(--brand-ink);
 }
 
-/* Same correction for solid orange fills that still ask for white text. */
+/* Same correction for solid brand fills that still ask for white text. */
 .bg-brand.text-white,
 .bg-accent.text-white {
   color: var(--brand-ink);
@@ -160,7 +244,7 @@ body {
 }
 
 .story-ring {
-  background: conic-gradient(from 210deg, #ffb76b, #ff9f43, #f47b20, #ff9f43, #ffb76b);
+  background: conic-gradient(from 210deg, var(--grad-1), var(--grad-2), var(--accent), var(--grad-2), var(--grad-1));
 }
 
 .skeleton {

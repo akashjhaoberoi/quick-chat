@@ -32,7 +32,7 @@ export function ScoreCard() {
           <Trophy className="h-6 w-6" />
         </span>
         <div className="min-w-0 flex-1">
-          <p id="score-title" className="text-xs font-bold uppercase tracking-wider text-white/80">
+          <p id="score-title" className="text-xs font-bold uppercase tracking-wider opacity-80">
             Quick Chat score
           </p>
           {score.isPending ? (

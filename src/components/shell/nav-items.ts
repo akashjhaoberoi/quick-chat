@@ -22,20 +22,22 @@ export const PRIMARY_NAV: NavItem[] = [
 
 export const ADMIN_NAV: NavItem = { href: "/admin", label: "Admin", icon: Shield };
 
-/** Mobile bottom bar, in the product owner's order (Camera is drawn as a filled action). */
+/**
+ * Mobile bottom bar (Camera in the centre, drawn as a filled action). Calls
+ * holds the first slot until a friends map exists.
+ */
 export const MOBILE_NAV: NavItem[] = [
-  { href: "/chats", label: "Chats", icon: MessageCircle, badge: "chats" },
+  { href: "/calls", label: "Calls", icon: Phone },
+  { href: "/chats", label: "Chat", icon: MessageCircle, badge: "chats" },
   { href: "/camera", label: "Camera", icon: Camera },
   { href: "/stories", label: "Stories", icon: Sparkles },
-  { href: "/calls", label: "Calls", icon: Phone },
-  { href: "/profile", label: "Profile", icon: User },
+  { href: "/discover", label: "Discover", icon: Compass },
 ];
 
 /** Mobile account menu (header avatar): destinations not in the bottom bar or header. */
 export const MOBILE_MENU_NAV: NavItem[] = [
   { href: "/profile", label: "Profile", icon: User },
   { href: "/home", label: "Home", icon: Home },
-  { href: "/discover", label: "Discover", icon: Compass },
   { href: "/snaps", label: "Snaps", icon: Zap, badge: "snaps" },
   { href: "/friends", label: "Friends", icon: Users, badge: "requests" },
   { href: "/premium", label: "Premium", icon: Crown },

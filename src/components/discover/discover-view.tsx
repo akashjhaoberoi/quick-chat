@@ -4,10 +4,9 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { BadgeCheck, Bookmark, Compass, Hash, Plus, Search, Users } from "lucide-react";
+import { BadgeCheck, Bookmark, ChevronDown, Compass, Hash, Plus, Search, Users } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Tabs } from "@/components/ui/controls";
 import { Dialog } from "@/components/ui/dialog";
 import { EmptyState, ListSkeleton } from "@/components/ui/feedback";
 import { Input } from "@/components/ui/input";
@@ -18,11 +17,17 @@ import { Feed } from "./feed";
 import { patchPosts } from "./post-actions";
 import type { Creator, DiscoverTab, TrendingTag } from "./types";
 
+/** Sort options (feed modes of discover_feed, plus your saved posts). */
 const TABS: { value: DiscoverTab; label: string }[] = [
-  { value: "for_you", label: "For You" },
-  { value: "following", label: "Following" },
+  { value: "for_you", label: "Recommended" },
   { value: "trending", label: "Trending" },
+  { value: "following", label: "Following" },
   { value: "saved", label: "Saved" },
+];
+
+/** Categories filter by the matching hashtag (#art, #sports, …). */
+const CATEGORIES = [
+  "Art", "Sports", "Cinema", "Vines", "Music", "Movies", "Esports", "Geography", "Discovery", "Cosmetics", "Technology", "Education", "Entertainment",
 ];
 
 export function useTrendingTags() {
@@ -114,9 +119,18 @@ export function DiscoverView() {
   const params = useSearchParams();
   const raw = params.get("tab");
   const tab: DiscoverTab = TABS.some((t) => t.value === raw) ? (raw as DiscoverTab) : "for_you";
+  const rawCategory = params.get("category")?.toLowerCase() ?? "";
+  const category = CATEGORIES.some((c) => c.toLowerCase() === rawCategory) ? rawCategory : "";
   const [searchOpen, setSearchOpen] = useState(false);
 
-  const setTab = (t: DiscoverTab) => router.replace(t === "for_you" ? pathname : `${pathname}?tab=${t}`, { scroll: false });
+  const go = (t: DiscoverTab, c: string) => {
+    const q = new URLSearchParams();
+    if (t !== "for_you") q.set("tab", t);
+    if (c && t !== "saved") q.set("category", c);
+    const qs = q.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+  };
+  const setTab = (t: DiscoverTab) => go(t, category);
 
   const empty =
     tab === "following" ? (
@@ -153,7 +167,22 @@ export function DiscoverView() {
       <div className="flex min-w-0 flex-1 flex-col">
         <div className="space-y-2 px-3 pt-3 md:px-6">
           <div className="flex items-center gap-2">
-            <Tabs<DiscoverTab> ariaLabel="Discover feeds" items={TABS} value={tab} onChange={setTab} className="min-w-0 flex-1 lg:max-w-md" />
+            <h1 className="min-w-0 flex-1 truncate font-display text-xl font-extrabold tracking-tight">Discover</h1>
+            <label className="relative inline-flex shrink-0 items-center">
+              <span className="sr-only">Sort Discover</span>
+              <select
+                value={tab}
+                onChange={(e) => setTab(e.target.value as DiscoverTab)}
+                className="h-10 appearance-none rounded-full border border-border bg-surface-2 pl-4 pr-9 text-sm font-semibold text-ink outline-none focus-visible:ring-4 focus-visible:ring-[var(--ring)]"
+              >
+                {TABS.map((t) => (
+                  <option key={t.value} value={t.value}>
+                    {t.label}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="pointer-events-none absolute right-3 h-4 w-4 text-muted" aria-hidden />
+            </label>
             <Button variant="secondary" size="icon" aria-label="Search creators" onClick={() => setSearchOpen(true)} className="lg:hidden">
               <Search className="h-5 w-5" />
             </Button>
@@ -161,10 +190,32 @@ export function DiscoverView() {
               <Plus className="h-5 w-5" />
             </Link>
           </div>
-          <TagChips className="flex gap-2 overflow-x-auto pb-1 no-scrollbar lg:hidden" />
+          {tab !== "saved" ? (
+            <div role="radiogroup" aria-label="Categories" className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+              {["", ...CATEGORIES.map((c) => c.toLowerCase())].map((c) => {
+                const active = c === category;
+                return (
+                  <button
+                    key={c || "all"}
+                    type="button"
+                    role="radio"
+                    aria-checked={active}
+                    onClick={() => go(tab, c)}
+                    className={
+                      active
+                        ? "shrink-0 rounded-full bg-ink px-3.5 py-1.5 text-xs font-bold text-bg"
+                        : "shrink-0 rounded-full bg-surface-2 px-3.5 py-1.5 text-xs font-semibold text-ink-2 hover:bg-surface-3"
+                    }
+                  >
+                    {c ? CATEGORIES.find((x) => x.toLowerCase() === c) : "All"}
+                  </button>
+                );
+              })}
+            </div>
+          ) : null}
         </div>
         <div className="relative min-h-0 flex-1 pt-2">
-          <Feed key={tab} tab={tab} empty={empty} />
+          <Feed key={`${tab}:${category}`} tab={tab} tag={category || undefined} empty={empty} />
         </div>
       </div>
       <aside className="hidden w-80 shrink-0 space-y-6 overflow-y-auto border-l border-border p-5 scrollbar-thin lg:block">
